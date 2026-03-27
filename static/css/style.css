@@ -1,0 +1,1983 @@
+/* =========================================================
+   FITNESS HUB PRO | ПРЕМІУМ ДИЗАЙН (Awwwards Style)
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700;900&display=swap');
+
+:root {
+    /* Колірна палітра: Преміальна Темна (Dark Aesthetic) */
+    --bg-color: #030303;
+    --card-bg: rgba(20, 20, 20, 0.85);
+    --text-color: #ffffff;
+    --hint-color: #888888;
+
+    /* Акценти: Неоновий фіолетовий, синій та золотий */
+    --theme-color: #bf5af2; /* Deep purple */
+    --btn-text: #ffffff;
+    --accent-gold: #d4af37;
+    --danger: #ff2d55;
+    --success: #32d74b;
+    --client-blue: #0a84ff;
+    --warning: #ffd60a;
+
+    /* Інтерфейс */
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --glass-blur: blur(20px);
+    --glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    overflow-x: hidden;
+    width: 100vw;
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.5;
+    overflow-x: hidden;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    /* Кастомний скроллбар для десктопу */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hint-color) var(--bg-color);
+    position: relative;
+    z-index: 0;
+    transition: background-color 0.4s ease;
+}
+
+/* =========================================================
+   DYNAMIC THEMES & MESH GRADIENTS (FemTech 3.0)
+   ========================================================= */
+
+/* Стандартні вкладки */
+body.theme-profile {
+    --theme-color: #0a84ff;
+}
+
+body.theme-dashboard {
+    --theme-color: #00ea66;
+}
+
+body.theme-nutrition {
+    --theme-color: #ff9500;
+}
+
+body.theme-progress {
+    --theme-color: #bf5af2;
+}
+
+body.theme-coach {
+    --theme-color: #32ade6;
+}
+
+body.theme-gamification {
+    --theme-color: #d4af37;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    z-index: -1;
+    opacity: 0.6;
+    pointer-events: none;
+    background: radial-gradient(circle at 30% 40%, rgba(0, 234, 102, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(10, 132, 255, 0.05) 0%, transparent 40%);
+    transition: background 1.5s ease;
+}
+
+/* Динамічні теми для фаз циклу */
+body.theme-menstruation {
+    --theme-color: #ff2d55;
+}
+
+body.theme-menstruation::before {
+    background: radial-gradient(circle at 30% 40%, rgba(255, 45, 85, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(200, 20, 50, 0.15) 0%, transparent 40%);
+}
+
+body.theme-follicular {
+    --theme-color: #0a84ff;
+}
+
+body.theme-follicular::before {
+    background: radial-gradient(circle at 30% 40%, rgba(10, 132, 255, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(0, 234, 102, 0.15) 0%, transparent 40%);
+}
+
+body.theme-ovulation {
+    --theme-color: #bf5af2;
+}
+
+body.theme-ovulation::before {
+    background: radial-gradient(circle at 30% 40%, rgba(191, 90, 242, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(10, 132, 255, 0.2) 0%, transparent 40%);
+}
+
+body.theme-luteal {
+    --theme-color: #ffd60a;
+}
+
+body.theme-luteal::before {
+    background: radial-gradient(circle at 30% 40%, rgba(255, 214, 10, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(255, 149, 0, 0.2) 0%, transparent 40%);
+}
+
+/* =========================================================
+   ТИПОГРАФІКА
+   ========================================================= */
+h1,
+h2,
+h3,
+h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+}
+
+h2 {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 24px;
+}
+
+h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+/* =========================================================
+   УТИЛІТАРНІ КЛАСИ (Utility Classes)
+   ========================================================= */
+.mt-0 {
+    margin-top: 0 !important;
+}
+
+.mt-4 {
+    margin-top: 4px !important;
+}
+
+.mt-8 {
+    margin-top: 8px !important;
+}
+
+.mt-16 {
+    margin-top: 16px !important;
+}
+
+.mt-24 {
+    margin-top: 24px !important;
+}
+
+.mt-32 {
+    margin-top: 32px !important;
+}
+
+.mt-40 {
+    margin-top: 40px !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mb-4 {
+    margin-bottom: 4px !important;
+}
+
+.mb-8 {
+    margin-bottom: 8px !important;
+}
+
+.mb-16 {
+    margin-bottom: 16px !important;
+}
+
+.mb-24 {
+    margin-bottom: 24px !important;
+}
+
+.mb-32 {
+    margin-bottom: 32px !important;
+}
+
+.mb-40 {
+    margin-bottom: 40px !important;
+}
+
+.pt-24 {
+    padding-top: 24px !important;
+}
+
+.pb-24 {
+    padding-bottom: 24px !important;
+}
+
+.pb-100 {
+    padding-bottom: 100px !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+.text-neon {
+    text-shadow: 0 0 5px var(--theme-color);
+    color: var(--theme-color);
+}
+
+.text-muted {
+    color: var(--hint-color);
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.gap-8 {
+    gap: 8px !important;
+}
+
+.gap-16 {
+    gap: 16px !important;
+}
+
+.w-full {
+    width: 100% !important;
+}
+
+.relative {
+    position: relative !important;
+}
+
+/* =========================================================
+   BENTO GRID SYSTEM
+   ========================================================= */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 0 4px;
+}
+
+.bento-col-span-2 {
+    grid-column: span 2;
+}
+
+.bento-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: var(--glass-shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+
+.bento-card:active {
+    transform: scale(0.98) translateZ(0);
+    box-shadow: 0 4px 15px rgba(100, 90, 140, 0.04);
+}
+
+.bento-card img {
+    border-radius: 24px;
+    object-fit: cover;
+}
+
+/* Enforce rounded corners on buttons and inputs */
+button, input, select, textarea {
+    border-radius: 24px !important;
+}
+
+/* Avatar Styling */
+#user-avatar-container {
+    transition: transform 0.3s ease;
+}
+#user-avatar-container:active {
+    transform: scale(0.95);
+}
+
+/* Wellbeing Emoji Styling */
+#cycle-view .bento-grid .bento-card div[onclick*="logCycleWellbeing"] {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* =========================================================
+   БАЗОВІ КОМПОНЕНТИ (Картки та Блоки)
+   ========================================================= */
+.view {
+    display: none;
+    padding: 20px 16px 100px 16px; /* Optimized paddings */
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.view.active {
+    display: block;
+}
+
+/* Glassmorphism 2.0 - Legacy Card (Updated to match Bento) */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--glass-shadow);
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:active {
+    transform: scale(0.98) translateZ(0);
+    box-shadow: 0 4px 15px rgba(100, 90, 140, 0.04);
+}
+
+/* Тренерська клієнт-картка */
+.client-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    /* standard radius-md */
+    padding: 15px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.client-card:active {
+    transform: scale(0.98) translateZ(0);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* =========================================================
+   SVG & BLOB АНІМАЦІЇ (Нове, Оптимізовано під GPU)
+   ========================================================= */
+.breathing-blob {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle at 30% 30%, var(--theme-color), transparent);
+    border-radius: 50%;
+    animation: blobMorph 8s ease-in-out infinite alternate;
+    opacity: 0.1;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    will-change: transform;
+    transform: translate(-50%, -50%) translateZ(0);
+    pointer-events: none;
+}
+
+@keyframes blobMorph {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg) translateZ(0);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(45deg) translateZ(0);
+    }
+}
+
+.svg-ring-progress {
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Видалено важкий filter: drop-shadow */
+}
+
+.svg-arc-progress {
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =========================================================
+   ФОРМИ ТА КНОПКИ
+   ========================================================= */
+label {
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    color: var(--hint-color);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 16px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    border-radius: 0;
+    transition: border-color 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-bottom: 1px solid var(--theme-color);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+button {
+    width: 100%;
+    padding: 16px;
+    background: var(--theme-color);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    margin-top: 24px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+button:active {
+    transform: scale(0.96) translateZ(0);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button.secondary {
+    background: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+}
+
+button.delete {
+    background: rgba(255, 45, 85, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(255, 45, 85, 0.2);
+}
+
+/* =========================================================
+   НАВІГАЦІЯ (Bottom Bar)
+   ========================================================= */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: rgba(10, 10, 10, 0.65);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 5px;
+    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    will-change: transform;
+}
+
+.nav-item {
+    text-align: center;
+    color: var(--hint-color);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1;
+    transition: color 0.3s ease;
+}
+
+.nav-item span {
+    display: block;
+    font-size: 20px;
+    margin-bottom: 4px;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-item.active {
+    color: var(--theme-color);
+}
+
+.nav-item.active span {
+    transform: translateY(-4px) scale(1.1) translateZ(0);
+}
+
+/* =========================================================
+   МОДАЛЬНІ ВІКНА
+   ========================================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+    transform: translateZ(0);
+    transition: opacity 0.4s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: rgba(15, 15, 15, 0.85);
+    /* Видалено backdrop-filter щоб не було подвійного розмиття */
+    width: 100%;
+    border-radius: 30px 30px 0 0;
+    padding: 30px 24px 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+    will-change: transform;
+    transform: translateY(100%) translateZ(0);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0) translateZ(0);
+}
+
+/* =========================================================
+   СПЕЦИФІЧНІ ЕЛЕМЕНТИ ДОДАТКУ
+   ========================================================= */
+
+/* Тренування */
+.day-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    scrollbar-width: none;
+}
+
+.day-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.day-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hint-color);
+    cursor: pointer;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: all 0.3s ease;
+}
+
+.day-tab.active {
+    background: var(--text-color);
+    color: #000;
+    border-color: var(--text-color);
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+}
+
+.ex-row {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+.ex-row:active {
+    background: rgba(255, 255, 255, 0.05);
+    transform: scale(0.98) translateZ(0);
+}
+
+/* Фікси для назви вправи та кнопок */
+.ex-row>div:first-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+}
+
+.ex-row>div:first-child>div:first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.ex-row>div:first-child>div:last-child {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ex-row .exercise-title {
+    margin: 0;
+    line-height: 1.3;
+    font-size: 16px;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.btn-log-set {
+    margin-top: 0 !important;
+    flex-shrink: 0;
+}
+
+/* Відображення виконаних вправ */
+.ex-completed {
+    opacity: 0.5;
+    border-color: var(--success);
+}
+
+/* Закреслення тексту для виконаних вправ */
+.ex-completed .ex-title-text,
+.ex-completed .ex-sub-text {
+    text-decoration: line-through;
+}
+
+.ex-completed .ex-title-text {
+    color: var(--success);
+}
+
+/* Їжа та Прогрес-бари */
+.nutri-grid {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.nutri-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+}
+
+.progress-circle {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.progress-circle-fill {
+    height: 100%;
+    background: var(--theme-color);
+    border-radius: 4px;
+    width: 0%;
+    will-change: width, transform;
+    transform: translateZ(0);
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Жорсткі розміри для SVG-графіки */
+.svg-ring-container {
+    flex-shrink: 0 !important;
+    min-width: 120px !important;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.cal-arc-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 250px;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0 !important;
+    margin: 0 auto;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.cal-arc-text {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Range Sliders */
+input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    background: transparent;
+    padding: 10px 0;
+    border: none;
+}
+
+input[type=range]:focus {
+    outline: none;
+    border-bottom: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    border: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: var(--theme-color);
+    margin-top: -7px;
+    box-shadow: 0 0 10px var(--theme-color);
+    border: none;
+    cursor: pointer;
+}
+
+input[type=range]::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    border: none;
+}
+
+input[type=range]::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: var(--theme-color);
+    box-shadow: 0 0 10px var(--theme-color);
+    border: none;
+    cursor: pointer;
+}
+
+/* Water Tracker */
+.water-glass {
+    width: 35px;
+    height: 45px;
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    border-radius: 4px 4px 10px 10px;
+    cursor: pointer;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: all 0.4s ease;
+    background: transparent;
+}
+
+.water-glass:active {
+    transform: scale(0.9) translateZ(0);
+}
+
+.water-glass.filled {
+    background: rgba(10, 132, 255, 0.8);
+    box-shadow: 0 0 15px rgba(10, 132, 255, 0.4);
+    border-color: #0a84ff;
+}
+
+/* Статистика профілю */
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.profile-stat {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 20px;
+    border-radius: 24px;
+    text-align: center;
+    will-change: transform;
+    transform: translateZ(0);
+    box-shadow: var(--glass-shadow);
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 900;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 4px;
+}
+
+/* =========================================================
+   ЖІНОЧИЙ ЦИКЛ (FemTech) - Оптимізовані анімації GPU
+   ========================================================= */
+
+@keyframes pulse-opacity {
+    0% {
+        opacity: 0.2;
+        transform: scale(1) translateZ(0);
+    }
+
+    100% {
+        opacity: 0.6;
+        transform: scale(1.05) translateZ(0);
+    }
+}
+
+#cycle-ring-circle {
+    transition: border-color 1s ease;
+}
+
+.ring-menstruation,
+.ring-follicular,
+.ring-ovulation,
+.ring-luteal {
+    position: relative;
+}
+
+/* Використовуємо ::after для пульсації замість прямого box-shadow */
+.ring-menstruation::after,
+.ring-follicular::after,
+.ring-ovulation::after,
+.ring-luteal::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    z-index: -1;
+    will-change: opacity, transform;
+    animation: pulse-opacity 2s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+.ring-menstruation {
+    border-color: #ff2d55 !important;
+}
+
+.ring-menstruation::after {
+    box-shadow: 0 0 15px rgba(255, 45, 85, 0.5);
+}
+
+.ring-follicular {
+    border-color: #0a84ff !important;
+}
+
+.ring-follicular::after {
+    box-shadow: 0 0 15px rgba(10, 132, 255, 0.5);
+}
+
+.ring-ovulation {
+    border-color: #bf5af2 !important;
+}
+
+.ring-ovulation::after {
+    box-shadow: 0 0 15px rgba(191, 90, 242, 0.5);
+}
+
+.ring-luteal {
+    border-color: #ffd60a !important;
+}
+
+.ring-luteal::after {
+    box-shadow: 0 0 15px rgba(255, 214, 10, 0.5);
+}
+
+.symptoms-carousel {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+}
+
+.symptoms-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.symptom-chip {
+    flex: 0 0 auto;
+    min-width: 100px;
+    scroll-snap-align: center;
+    text-align: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    will-change: transform;
+    transform: translateZ(0);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+}
+
+.symptom-chip.active {
+    background: var(--text-color) !important;
+    color: #000 !important;
+    border-color: var(--text-color) !important;
+    transform: scale(1.05) translateZ(0);
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+}
+
+/* Календар */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.calendar-nav-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: var(--text-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.3s ease;
+}
+
+.calendar-nav-btn:active {
+    transform: scale(0.9) translateZ(0);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.calendar-day-header {
+    font-size: 11px;
+    color: var(--hint-color);
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 50%;
+    border: 1px solid transparent;
+    font-size: 15px;
+    position: relative;
+    cursor: pointer;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+}
+
+.calendar-day:active {
+    transform: scale(0.9) translateZ(0);
+}
+
+.calendar-day.today {
+    border-color: var(--text-color);
+    font-weight: 700;
+}
+
+.calendar-day.selected {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+}
+
+.calendar-dots {
+    display: flex;
+    gap: 3px;
+    position: absolute;
+    bottom: 6px;
+}
+
+.cal-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+
+.cal-dot.red {
+    background-color: var(--danger);
+    box-shadow: 0 0 5px var(--danger);
+}
+
+.cal-dot.green {
+    background-color: var(--success);
+    box-shadow: 0 0 5px var(--success);
+}
+
+.cal-dot.blue {
+    background-color: var(--client-blue);
+    box-shadow: 0 0 5px var(--client-blue);
+}
+
+.cal-dot.yellow {
+    background-color: var(--warning);
+    box-shadow: 0 0 5px var(--warning);
+}
+
+/* =========================================================
+   ГЕЙМІФІКАЦІЯ ТА ДОСЯГНЕННЯ (Нові стилі)
+   ========================================================= */
+
+#achievements-container h4 {
+    color: var(--theme-color) !important;
+    margin-top: 32px !important;
+    margin-bottom: 16px !important;
+    font-size: 15px !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+.achieve-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 4px 14px;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: all 0.4s ease;
+}
+
+.achieve-card.unlocked {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: rgba(212, 175, 55, 0.4);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
+}
+
+.achieve-icon {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    filter: grayscale(100%) opacity(0.3);
+    will-change: transform;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.achieve-card.unlocked .achieve-icon {
+    filter: none;
+    transform: scale(1.15) translateY(-2px) translateZ(0);
+    text-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+}
+
+.achieve-title {
+    grid-column: 2;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-color);
+}
+
+.achieve-desc {
+    grid-column: 2;
+    font-size: 12px;
+    color: var(--hint-color);
+    margin-bottom: 6px;
+}
+
+.achieve-progress-bg {
+    grid-column: 2;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.achieve-progress-fill {
+    height: 100%;
+    background: var(--accent-gold);
+    border-radius: 4px;
+    width: 0%;
+    will-change: width, transform;
+    transform: translateZ(0);
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.achieve-progress-text {
+    grid-column: 2;
+    font-size: 11px;
+    color: var(--hint-color);
+    text-align: right;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.achieve-card.unlocked .achieve-progress-text {
+    color: var(--accent-gold);
+}
+
+/* =========================================================
+   КІНЕМАТИКА ТА АНІМАЦІЇ (Для animations.js)
+   ========================================================= */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.reveal {
+    opacity: 0;
+    will-change: transform, opacity;
+    transform: translateY(30px) translateZ(0);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+}
+
+/* =========================================================
+   КАСТОМНИЙ КУРСОР (Для Desktop)
+   ========================================================= */
+@media (pointer: fine) {
+    body {
+        cursor: none;
+    }
+
+    #custom-cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 12px;
+        height: 12px;
+        background-color: var(--theme-color);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        will-change: transform, opacity;
+        transform: translate(-50%, -50%) scale(1) translateZ(0);
+        transition: transform 0.3s ease, opacity 0.3s ease, mix-blend-mode 0.3s ease;
+        box-shadow: 0 0 10px var(--theme-color);
+    }
+
+    #custom-cursor.hovered {
+        transform: translate(-50%, -50%) scale(3.33) translateZ(0);
+        background-color: rgba(255, 255, 255, 0.1);
+        /* Видалено backdrop-filter для швидкодії */
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* Loader */
+.loader-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Skeleton Screens */
+.skeleton-box {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+}
+
+.skeleton-box::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: skeleton-pulse 1.5s infinite;
+}
+
+.skeleton-text {
+    height: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-text::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    animation: skeleton-pulse 1.5s infinite;
+}
+
+@keyframes skeleton-pulse {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(50%); }
+}
+
+.skeleton-card {
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid var(--theme-color);
+    border-radius: 50%;
+    will-change: transform;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg) translateZ(0);
+    }
+
+    100% {
+        transform: rotate(360deg) translateZ(0);
+    }
+}
+
+/* =========================================================
+   V2.0 FEATURES (Offline, Barbell, Stories, Privacy, Coach)
+   ========================================================= */
+
+/* 1. Offline Mode Indicator */
+.offline-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: var(--warning);
+    color: #000;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 9999;
+    will-change: transform;
+    transform: translateY(-100%) translateZ(0);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 15px rgba(255, 214, 10, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.offline-indicator.active {
+    transform: translateY(0) translateZ(0);
+}
+
+/* 2. Barbell Math */
+.barbell-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 24px 0;
+    height: 120px;
+    position: relative;
+    width: 100%;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.barbell-bar {
+    width: 100%;
+    height: 14px;
+    background: linear-gradient(to bottom, #e0e0e0, #888888, #444444);
+    border-radius: 2px;
+    position: absolute;
+    z-index: 1;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+}
+
+.barbell-sleeve {
+    width: 30px;
+    height: 28px;
+    background: linear-gradient(to bottom, #ffffff, #aaaaaa, #555555);
+    border-radius: 4px;
+    position: absolute;
+    z-index: 2;
+}
+
+.plates-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    gap: 2px;
+}
+
+.plate {
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 900;
+    font-size: 13px;
+    box-shadow: inset -2px 0 5px rgba(0, 0, 0, 0.5), 2px 0 5px rgba(0, 0, 0, 0.5), 0 5px 10px rgba(0, 0, 0, 0.5);
+    font-family: 'Space Grotesk', sans-serif;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.plate-25 {
+    height: 110px;
+    width: 26px;
+    background: #ff2d55;
+}
+
+.plate-20 {
+    height: 100px;
+    width: 24px;
+    background: #0a84ff;
+}
+
+.plate-15 {
+    height: 90px;
+    width: 22px;
+    background: #ffd60a;
+    color: #000;
+}
+
+.plate-10 {
+    height: 80px;
+    width: 20px;
+    background: #32d74b;
+    color: #000;
+}
+
+.plate-5 {
+    height: 60px;
+    width: 18px;
+    background: #ffffff;
+    color: #000;
+}
+
+.plate-2_5 {
+    height: 50px;
+    width: 16px;
+    background: #000000;
+    border-color: #333;
+}
+
+.plate-1_25 {
+    height: 40px;
+    width: 14px;
+    background: #888888;
+}
+
+/* 3. Stories Recap */
+.stories-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    opacity: 0;
+    will-change: opacity;
+    transform: translateZ(0);
+    transition: opacity 0.4s ease;
+}
+
+.stories-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.stories-progress-container {
+    display: flex;
+    gap: 6px;
+    padding: 15px 15px 0;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    z-index: 3001;
+}
+
+.story-progress {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.story-progress-fill {
+    height: 100%;
+    background: #fff;
+    width: 0%;
+    will-change: width, transform;
+    transform: translateZ(0);
+    transition: width 0.1s linear;
+}
+
+.story-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    background: radial-gradient(circle at center, rgba(0, 234, 102, 0.2) 0%, #000 100%);
+}
+
+/* 4. Privacy Toggles (iOS Style) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    will-change: transform, background-color;
+    transform: translateZ(0);
+    transition: .4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 30px;
+    border: 1px solid var(--border-color);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #fff;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: .4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+input:checked+.toggle-slider {
+    background-color: var(--theme-color);
+    border-color: var(--theme-color);
+}
+
+input:checked+.toggle-slider:before {
+    transform: translateX(22px) translateZ(0);
+}
+
+/* 5. Coach Comment Badge */
+.coach-comment-badge {
+    background: rgba(10, 132, 255, 0.05);
+    border: 1px dashed rgba(10, 132, 255, 0.4);
+    border-radius: 16px;
+    padding: 16px 16px 12px 16px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--text-color);
+    position: relative;
+    line-height: 1.5;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.coach-comment-badge::before {
+    content: "💡 Порада тренера";
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-color);
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--client-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 10px;
+    border: 1px solid rgba(10, 132, 255, 0.4);
+}
+
+/* 6. FUELCAST REDESIGN STYLES */
+.fuel-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+}
+
+.calendar-card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+#weekly-calendar {
+    gap: 8px;
+    padding-bottom: 8px;
+    /* For scrollbar space if needed */
+}
+
+/* Hide scrollbar for the weekly calendar */
+#weekly-calendar::-webkit-scrollbar {
+    display: none;
+}
+
+#weekly-calendar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* =========================================================
+   STORIES OVERLAY (Weekly Recap)
+   ========================================================= */
+
+.stories-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 3000;
+    flex-direction: column;
+    animation: storiesFadeIn 0.3s ease;
+}
+
+@keyframes storiesFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.stories-progress-container {
+    display: flex;
+    gap: 4px;
+    padding: 16px 12px 8px 12px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3001;
+}
+
+.story-bar-bg {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.story-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: #fff;
+    border-radius: 2px;
+    transition: none;
+}
+
+.story-progress {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.story-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #fff;
+    border-radius: 2px;
+    transition: none;
+}
+
+.story-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px 20px 20px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.story-close {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3002;
+    cursor: pointer;
+}
+
+.story-close-btn {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3002;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.story-share-btn {
+    position: absolute;
+    bottom: 40px;
+    right: 20px;
+    background: linear-gradient(135deg, #0a84ff, #bf5af2);
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3002;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(10, 132, 255, 0.5);
+    transition: transform 0.2s ease;
+}
+
+.story-share-btn:active {
+    transform: scale(0.9);
+}
+
+/* =========================================================
+   SUBSCRIPTIONS & PAYWALL (Premium Locks)
+   ========================================================= */
+.premium-locked-content {
+    position: relative;
+    filter: blur(4px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.premium-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: inherit;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.lock-badge {
+    background: linear-gradient(135deg, #d4af37, #f3e5ab);
+    color: #000;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    letter-spacing: 0.5px;
+}
+
+#paywall-modal .modal-content {
+    background: linear-gradient(180deg, rgba(20,20,20,0.95) 0%, rgba(5,5,5,1) 100%);
+    border-top: 2px solid #d4af37;
+    text-align: center;
+}
+
+#paywall-buy-btn {
+    background: linear-gradient(135deg, #d4af37, #f3e5ab);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+}
+
+/* =========================================================
+   INTERACTIVE ONBOARDING
+   ========================================================= */
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: none;
+}
+
+.onboarding-highlight {
+    box-shadow: 0 0 0 4px var(--theme-color), 0 0 30px var(--theme-color) !important;
+    border-radius: inherit;
+}
+
+.onboarding-skip-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 10002;
+    backdrop-filter: blur(5px);
+}
+
+.onboarding-tooltip {
+    position: absolute;
+    z-index: 10001;
+    background: #fff;
+    color: #000;
+    padding: 16px;
+    border-radius: 16px;
+    width: 280px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    font-family: 'Inter', sans-serif;
+    animation: onboardingFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes onboardingFadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-tooltip::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.onboarding-tooltip.top::after {
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px 8px 0 8px;
+    border-color: #fff transparent transparent transparent;
+}
+
+.onboarding-tooltip.bottom::after {
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 8px 8px 8px;
+    border-color: transparent transparent #fff transparent;
+}
+
+.onboarding-text {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.onboarding-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.onboarding-btn {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.onboarding-btn.upsell {
+    background: linear-gradient(135deg, #bf5af2, #0a84ff);
+    box-shadow: 0 4px 15px rgba(191, 90, 242, 0.4);
+}
+/* PREMIUM LOCKS & BLUR EFFECTS */
+.premium-locked-container { position: relative; overflow: hidden; }
+.premium-blur { filter: blur(5px) grayscale(0.5); pointer-events: none; user-select: none; }
+.premium-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); z-index: 10; cursor: pointer; border-radius: inherit; transition: background 0.3s; }
+.premium-overlay:hover { background: rgba(0, 0, 0, 0.6); }
+.premium-lock-badge { background: #d4af37; color: #000; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }

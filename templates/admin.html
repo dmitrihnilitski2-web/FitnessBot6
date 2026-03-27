@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Панель Адміністратора | Fitness Hub</title>
+
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            fetch('/api/log_client_error', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: window.currentUserId || null,
+                    error_msg: message,
+                    url: source,
+                    line: lineno,
+                    col: colno,
+                    stack: error ? error.stack : null
+                })
+            }).catch(e => console.error("Log failed", e));
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+            fetch('/api/log_client_error', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: window.currentUserId || null,
+                    error_msg: 'Unhandled Promise: ' + (event.reason ? (event.reason.message || event.reason) : 'Unknown'),
+                    url: window.location.href,
+                    stack: event.reason ? event.reason.stack : null
+                })
+            }).catch(e => {});
+        });
+    </script>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="/static/css/style.css?v=3.0.0">
+
+    <style>
+        /* Специфічні стилі для Адмінки (Королівський фіолетовий/золотий) */
+        body.admin-mode {
+            --btn-color: #bf5af2;
+            --secondary-bg: #1c1c1e;
+        }
+        .admin-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .admin-stat-card {
+            background: rgba(191, 90, 242, 0.1);
+            border: 1px solid rgba(191, 90, 242, 0.3);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+        }
+        .admin-stat-value {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+        .admin-stat-label {
+            font-size: 11px;
+            color: var(--hint-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .admin-user-row {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .admin-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
+        }
+        .role-badge {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .role-trainer { background: rgba(50, 215, 75, 0.2); color: var(--success); }
+        .role-client { background: rgba(10, 132, 255, 0.2); color: var(--client-blue); }
+    </style>
+</head>
+
+<body class="admin-mode">
+
+    <div id="loading-view" class="view active loader-container">
+        <div class="spinner" style="border-left-color: var(--btn-color);"></div>
+        <h3 id="loading-text">Перевірка доступу...</h3>
+    </div>
+
+    <div id="error-view" class="view loader-container" style="display: none;">
+        <div style="margin-bottom: 20px; color: var(--danger);">
+            <i data-lucide="shield-alert" style="width: 64px; height: 64px;"></i>
+        </div>
+        <h2 style="color: var(--danger); text-align: center; margin-top: 0;">Доступ заборонено</h2>
+        <p style="color: var(--hint-color); text-align: center; font-size: 14px;">Ця панель доступна лише Головному Адміністратору.</p>
+    </div>
+
+    <div id="admin-view" class="view" style="padding-top: 20px; display: none;">
+        <div class="header" style="text-align: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: #bf5af2; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="crown"></i> Super Admin
+            </h2>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--hint-color);">Система глобальної аналітики</p>
+        </div>
+
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="bar-chart-2"></i> Загальні показники
+        </h3>
+        <div class="admin-stat-grid">
+            <div class="admin-stat-card">
+                <div class="admin-stat-value" id="stat-total-users">0</div>
+                <div class="admin-stat-label">Всіх юзерів</div>
+            </div>
+            <div class="admin-stat-card" style="background: rgba(255, 214, 10, 0.1); border-color: rgba(255, 214, 10, 0.3);">
+                <div class="admin-stat-value" id="stat-total-time" style="color: var(--accent-gold);">0</div>
+                <div class="admin-stat-label">Годин у Хабі</div>
+            </div>
+            <div class="admin-stat-card" style="background: rgba(50, 215, 75, 0.1); border-color: rgba(50, 215, 75, 0.3);">
+                <div class="admin-stat-value" id="stat-trainers" style="color: var(--success);">0</div>
+                <div class="admin-stat-label">Тренерів</div>
+            </div>
+            <div class="admin-stat-card" style="background: rgba(10, 132, 255, 0.1); border-color: rgba(10, 132, 255, 0.3);">
+                <div class="admin-stat-value" id="stat-clients" style="color: var(--client-blue);">0</div>
+                <div class="admin-stat-label">Клієнтів</div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; margin-bottom: 30px; padding: 15px;">
+            <p style="margin: 0; font-size: 14px; color: var(--hint-color);">Згенеровано тренувальних планів: <b id="stat-plans" style="color: var(--text-color); font-size: 16px;">0</b></p>
+        </div>
+
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="database"></i> База користувачів
+        </h3>
+        <p style="font-size: 12px; color: var(--hint-color); margin-top: -10px; margin-bottom: 15px;">Відсортовано за останньою активністю</p>
+
+        <div id="users-list">
+            <div class="spinner" style="margin: 20px auto; border-left-color: var(--btn-color);"></div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+
+    <script src="/static/js/admin.js?v=3.0.0" defer></script>
+
+</body>
+</html>

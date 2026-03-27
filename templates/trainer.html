@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-i18n="trainer_panel_title">Fitness Hub | Trainer</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="/static/js/i18n.js?v=3.2.0"></script>
+
+    <link rel="stylesheet" href="/static/css/style.css?v=3.2.0">
+
+    <style>
+        /* Специфічні стилі для Тренера */
+        body.trainer-mode {
+            --btn-color: #32d74b; /* Зелений колір для кнопок тренера */
+            --secondary-bg: #1c1c1e;
+        }
+        .client-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-trainer {
+            background: var(--btn-color);
+            color: #000;
+            border-radius: 50px;
+            font-weight: bold;
+            padding: 12px 24px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .trainer-badge {
+            background: rgba(50, 215, 75, 0.1);
+            color: #32d74b;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* V2.0 Styles for Coach Comments & Video */
+        .log-comment-btn {
+            background: rgba(10, 132, 255, 0.1);
+            color: #0a84ff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .log-comment-btn:hover {
+            background: rgba(10, 132, 255, 0.2);
+        }
+        .log-video-link {
+            color: #ff2d55;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(255, 45, 85, 0.1);
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-right: 6px;
+            transition: background 0.2s;
+        }
+        .log-video-link:hover {
+            background: rgba(255, 45, 85, 0.2);
+        }
+    </style>
+</head>
+<body class="trainer-mode">
+
+    <div id="loading-view" class="view active loader-container">
+        <div class="spinner"></div>
+        <h3 data-i18n="loading_trainer">Завантаження панелі тренера...</h3>
+    </div>
+
+    <div id="no-access-view" class="view pb-100" style="text-align: center; padding-top: 100px;">
+        <i data-lucide="shield-alert" style="width: 64px; height: 64px; color: var(--danger); margin-bottom: 20px;"></i>
+        <h2 data-i18n="trainer_no_access_title">Доступ заборонено</h2>
+        <p class="text-muted" data-i18n="trainer_no_access_desc">Ви не зареєстровані як тренер. Поверніться в головне меню.</p>
+        <button class="btn-trainer mt-24" onclick="window.location.href='/'" data-i18n="btn_back_hub">Назад в Хаб</button>
+    </div>
+
+    <div id="team-view" class="view pb-100">
+        <h2 class="reveal mt-24" data-i18n="trainer_my_team">Моя Команда</h2>
+
+        <div class="bento-card mb-24 reveal">
+            <h3 class="mt-0" style="color: #32d74b; font-size: 16px;"><i data-lucide="user-plus" style="width: 16px; height: 16px; margin-bottom: -3px;"></i> Запросити атлета</h3>
+            <p class="text-muted" style="font-size: 13px;" data-i18n="trainer_invite_desc">Поділіться цим посиланням, щоб додати атлета у вашу команду.</p>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <input type="text" id="invite-link" readonly style="flex: 1; font-size: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <button onclick="copyInviteLink()" style="width: auto; padding: 0 15px; border-radius: 12px; background: #32d74b; color: #000; border: none;"><i data-lucide="copy"></i></button>
+            </div>
+        </div>
+
+        <div id="clients-list" class="reveal">
+        </div>
+    </div>
+
+    <div id="client-modal" class="modal-overlay">
+        <div class="modal-content" style="max-height: 95vh;">
+            <div class="flex-between pb-16" style="border-bottom: 1px solid var(--border-color);">
+                <div>
+                    <h3 id="client-modal-name" class="mt-0 mb-0">Ім'я Атлета</h3>
+                    <div id="client-modal-goal" class="text-muted" style="font-size: 12px;">Ціль: ...</div>
+                </div>
+                <button class="secondary delete" style="width: auto; padding: 8px 16px; margin: 0;" onclick="closeModal('client-modal')" data-i18n="btn_close">Закрити</button>
+            </div>
+
+            <div class="mt-16 day-tabs" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div class="day-tab active" onclick="switchClientTab('plan', this)" data-i18n="trainer_tab_plan">План</div>
+                <div class="day-tab" onclick="switchClientTab('stats', this)" data-i18n="trainer_tab_stats">Прогрес</div>
+                <div class="day-tab" onclick="switchClientTab('diet', this)" data-i18n="trainer_tab_diet">Раціон</div>
+                <div class="day-tab" onclick="switchClientTab('history', this)" data-i18n="trainer_tab_history">Історія</div>
+            </div>
+
+            <div id="client-tab-plan" class="client-tab-content active mt-16">
+                <div class="flex-between mb-16">
+                    <h4 class="mt-0 mb-0" data-i18n="trainer_current_plan">Поточна програма</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="log-comment-btn" onclick="openApplyTemplateModal()" style="width: auto; color: #32d74b; background: rgba(50, 215, 75, 0.1); border: 1px solid rgba(50, 215, 75, 0.2);">З шаблону</button>
+                        <button class="log-comment-btn" onclick="openSaveTemplateModal()" style="width: auto; color: var(--accent-gold); background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2);">В шаблони</button>
+                    </div>
+                </div>
+                <div id="client-plan-container" style="max-height: 400px; overflow-y: auto;">
+                </div>
+                <button class="btn-trainer mt-16" onclick="saveClientPlan()" data-i18n="btn_save_changes">Зберегти зміни</button>
+            </div>
+
+            <div id="client-tab-stats" class="client-tab-content mt-16">
+                <div class="bento-card mb-16">
+                    <h4 class="mt-0" data-i18n="title_weight_chart">Динаміка ваги</h4>
+                    <div style="height: 180px;"><canvas id="clientWeightChart"></canvas></div>
+                </div>
+                <div id="client-fatigue-container">
+                </div>
+            </div>
+
+            <div id="client-tab-diet" class="client-tab-content mt-16">
+                <h4 class="mt-0" data-i18n="trainer_nutrition_plan">План харчування</h4>
+                <textarea id="client-nutrition-input" rows="10" placeholder="Напишіть рекомендації по БЖВ та раціону..." style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 15px; border: 1px solid var(--border-color); color: var(--text-color); width: 100%;"></textarea>
+                <button class="btn-trainer mt-16" onclick="saveClientNutrition()" data-i18n="btn_save_nutrition">Зберегти раціон</button>
+            </div>
+
+            <div id="client-tab-history" class="client-tab-content mt-16" style="max-height: 500px; overflow-y: auto;">
+                <h4 class="mt-0" data-i18n="title_history_today">Історія активності клієнта</h4>
+                <p class="text-muted mt-0 mb-16" style="font-size: 12px;">Ви можете залишити коментар або переглянути відео техніки виконання.</p>
+                <div id="client-history-list" class="flex-column gap-8">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="coach-comment-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-center gap-8" style="border-bottom: 1px solid var(--border-color); font-size: 22px; justify-content: flex-start; color: #0a84ff;">
+                <i data-lucide="message-square"></i> Надіслати пораду
+            </h3>
+            <p class="text-muted mt-16 mb-8" style="font-size: 13px;">Ваш коментар з'явиться у клієнта прямо під цим записом.</p>
+
+            <input type="hidden" id="comment-entity-type">
+            <input type="hidden" id="comment-entity-id">
+
+            <textarea id="coach-comment-text" rows="4" placeholder="Наприклад: 'Чудова техніка!', 'Спробуй тримати спину рівніше' або 'Зменш кількість соусів'..." style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; border: 1px solid rgba(10, 132, 255, 0.3); color: var(--text-color); font-size: 15px; width: 100%;"></textarea>
+
+            <button class="btn-trainer mt-24" style="background: #0a84ff; color: #fff;" onclick="if(typeof submitCoachComment === 'function') submitCoachComment()">Надіслати пораду клієнту</button>
+            <button class="secondary delete mt-12 w-full" style="border: none;" onclick="closeModal('coach-comment-modal')">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="apply-template-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color);">Мої Шаблони</h3>
+
+            <div id="templates-list" class="flex-column gap-12 mt-16" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                <p style="text-align: center; color: var(--hint-color); font-size: 14px;">Завантаження...</p>
+            </div>
+
+            <button class="secondary delete" style="width: 100%; border: none;" onclick="closeModal('apply-template-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <div id="edit-exercise-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="edit-ex-title" class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">Редагувати вправу</h3>
+            <input type="hidden" id="edit-ex-day">
+            <input type="hidden" id="edit-ex-index">
+            <label class="mt-16">Назва вправи</label>
+            <input type="text" id="edit-ex-name">
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full"><label class="mt-0">Підходи</label><input type="text" id="edit-ex-sets"></div>
+                <div class="w-full"><label class="mt-0">Повторення</label><input type="text" id="edit-ex-reps"></div>
+            </div>
+            <div class="flex-between gap-16 mt-32">
+                <button onclick="if(typeof submitEditExercise === 'function') submitEditExercise()" class="mt-0 btn-trainer" style="flex: 3; color:#000;">Зберегти</button>
+                <button id="btn-delete-ex" class="secondary delete mt-0 flex-center" onclick="if(typeof deleteExercise === 'function') deleteExercise()" style="flex: 1; height: auto; border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.1); color: var(--danger); border-radius: 50px;"><i data-lucide="trash-2"></i></button>
+            </div>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('edit-exercise-modal')">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="save-template-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">Зберегти як шаблон</h3>
+            <label class="mt-16">Назва шаблону</label>
+            <input type="text" id="template-name-input" placeholder="Напр: Програма на масу (Новачки)">
+            <button class="btn-trainer mt-32" onclick="if(typeof saveCurrentPlanAsTemplate === 'function') saveCurrentPlanAsTemplate()">Зберегти шаблон</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('save-template-modal')">Скасувати</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="navTo('team-view', this)">
+            <i data-lucide="users"></i>
+            <div style="font-size: 10px; margin-top: 4px;" data-i18n="trainer_nav_team">Моя Команда</div>
+        </div>
+        <div class="nav-item" onclick="window.location.href='/'">
+            <i data-lucide="log-out"></i>
+            <div style="font-size: 10px; margin-top: 4px;" data-i18n="trainer_nav_exit">Вийти в Хаб</div>
+        </div>
+    </nav>
+
+    <script src="/static/js/anatomy/bodyFront.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyBack.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyFemaleFront.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyFemaleBack.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/anatomy_mapper.js?v=3.2.0" defer></script>
+
+    <script src="/static/js/animations.js?v=3.2.0" defer></script>
+    <script src="/static/js/trainer.js?v=3.2.0" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

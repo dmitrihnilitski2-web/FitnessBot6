@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fitness Hub Pro</title>
+
+    <script>
+        window.onerror = function (message, source, lineno, colno, error) {
+            fetch('/api/log_client_error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: window.userId || null,
+                    error_msg: message,
+                    url: source,
+                    line: lineno,
+                    col: colno,
+                    stack: error ? error.stack : null
+                })
+            }).catch(e => console.error("Log failed", e));
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', function (event) {
+            fetch('/api/log_client_error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: window.userId || null,
+                    error_msg: 'Unhandled Promise: ' + (event.reason ? (event.reason.message || event.reason) : 'Unknown'),
+                    url: window.location.href,
+                    stack: event.reason ? event.reason.stack : null
+                })
+            }).catch(e => { });
+        });
+    </script>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="/static/js/i18n.js?v=3.2.0"></script>
+
+    <link rel="stylesheet" href="/static/css/style.css?v=3.2.0">
+</head>
+
+<body>
+
+    <div id="custom-cursor"></div>
+
+    <div id="offline-indicator" class="offline-indicator">
+        <i data-lucide="wifi-off" style="width: 16px; height: 16px;"></i> Немає мережі - Кешуємо
+    </div>
+
+    <div id="loading-view" class="view active loader-container">
+        <div class="spinner"></div>
+        <h3 id="loading-text" data-i18n="loading_ai" style="color: var(--text-color);">Підготовка Хабу...</h3>
+    </div>
+
+    <div id="form-view" class="view pb-100">
+        <h2 class="reveal mt-24" data-i18n="title_create_profile">Створити Профіль</h2>
+        <p class="reveal text-muted mb-24" style="font-size: 14px;" data-i18n="desc_create_profile">Система
+            індивідуально розрахує персональний макро- та мікроцикл на основі ваших даних.</p>
+
+        <div class="bento-grid reveal">
+            <div class="bento-card bento-col-span-2 pt-24 pb-24">
+                <label class="mt-0" data-i18n="label_name">Ім'я</label>
+                <input type="text" id="user_name" placeholder="Як до вас звертатися?"
+                    data-i18n-placeholder="placeholder_name">
+
+                <div class="flex-between gap-16 mt-16">
+                    <div class="w-full">
+                        <label class="mt-0" data-i18n="label_gender">Стать</label>
+                        <select id="gender"
+                            onchange="if(typeof toggleCycleContainer === 'function') toggleCycleContainer('gender', 'cycle_container')">
+                            <option value="male" data-i18n="gender_male">Чоловіча</option>
+                            <option value="female" data-i18n="gender_female">Жіноча</option>
+                        </select>
+                    </div>
+                    <div class="w-full">
+                        <label class="mt-0" data-i18n="label_age">Вік</label>
+                        <input type="number" id="age" placeholder="Років" data-i18n-placeholder="placeholder_age">
+                    </div>
+                </div>
+
+                <div id="cycle_container" class="mt-16 pt-24 pb-24"
+                    style="display: none; background: rgba(255, 45, 85, 0.05); border: 1px dashed rgba(255, 45, 85, 0.3); padding: 16px; border-radius: 16px;">
+                    <label style="color: #ff2d55;" class="mt-0" data-i18n="cycle_start_label">Перший день ост.
+                        менструації</label>
+                    <input type="date" id="cycle_start_date">
+                    <label style="color: #ff2d55;" class="mt-16" data-i18n="cycle_length_label">Середня тривалість циклу
+                        (днів)</label>
+                    <input type="number" id="cycle_length" value="28">
+                </div>
+
+                <div class="flex-between gap-16 mt-16">
+                    <div class="w-full">
+                        <label class="mt-0" data-i18n="label_height">Зріст (см)</label>
+                        <input type="number" id="height" placeholder="Напр: 175">
+                    </div>
+                    <div class="w-full">
+                        <label class="mt-0" data-i18n="label_weight">Вага (кг)</label>
+                        <input type="number" id="weight" placeholder="Напр: 70" step="0.1">
+                    </div>
+                </div>
+
+                <label class="mt-16" data-i18n="label_goal">Ваша головна ціль</label>
+                <select id="goal"
+                    onchange="if(typeof toggleCustomGoal === 'function') toggleCustomGoal('goal', 'custom-goal-container', 'custom_goal')">
+                    <option value="lose" data-i18n="goal_lose">Схуднення / Сушка</option>
+                    <option value="maintain" selected data-i18n="goal_maintain">Підтримка форми</option>
+                    <option value="gain" data-i18n="goal_gain">Набір м'язової маси</option>
+                    <option value="strength" data-i18n="goal_strength">Максимальна сила</option>
+                    <option value="endurance" data-i18n="goal_endurance">Витривалість</option>
+                    <option value="competition" data-i18n="goal_competition">Підготовка до змагань</option>
+                    <option value="custom" data-i18n="goal_custom">Своя специфічна ціль</option>
+                </select>
+
+                <div id="custom-goal-container" class="mt-16" style="display: none;">
+                    <label class="mt-0" data-i18n="label_custom_goal">Опишіть вашу ціль детально</label>
+                    <input type="text" id="custom_goal" placeholder="Напр: Хочу навчитися підтягуватися 20 разів">
+                </div>
+
+                <div id="competition-container" class="mt-16 pt-24 pb-24"
+                    style="display: none; background: rgba(212, 175, 55, 0.05); border: 1px dashed rgba(212, 175, 55, 0.3); padding: 16px; border-radius: 16px;">
+                    <label style="color: var(--accent-gold);" class="mt-0" data-i18n="comp_sport_label">Ваш вид
+                        спорту</label>
+                    <input type="text" id="comp_sport" placeholder="Напр: Пауерліфтинг, Кросфіт">
+                    <label style="color: var(--accent-gold);" class="mt-16" data-i18n="comp_date_label">Дата змагань
+                        (Пік форми)</label>
+                    <input type="date" id="comp_date">
+                </div>
+
+                <label class="mt-16" data-i18n="label_target_weight">Цільова вага (кг)</label>
+                <input type="number" id="target_weight" placeholder="Скільки хочете важити?" step="0.1">
+
+                <label class="mt-16" data-i18n="label_activity">Рівень фізичної активності</label>
+                <select id="activity">
+                    <option value="sedentary" data-i18n="act_sedentary">Сидячий (офіс)</option>
+                    <option value="light" data-i18n="act_light">Легкий (1-3 рази/тиж)</option>
+                    <option value="medium" selected data-i18n="act_medium">Середній (3-5 разів/тиж)</option>
+                    <option value="active" data-i18n="act_active">Високий (6-7 разів/тиж)</option>
+                    <option value="very_active" data-i18n="act_very_active">Дуже високий (фізична робота)</option>
+                </select>
+
+                <label class="mt-16" data-i18n="label_notes">Особливості (травми, побажання)</label>
+                <textarea id="notes" rows="3" placeholder="Наприклад: болить праве коліно..."></textarea>
+
+                <button id="submit-btn" onclick="submitProfile()" class="flex-center gap-8 mt-32 mb-16"
+                    data-i18n="btn_generate"><i data-lucide="rocket"></i> Згенерувати Програму</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-view" class="view pb-100">
+        <div class="bento-grid reveal mt-24">
+            
+            <!-- Hero Card (2x1) -->
+            <div class="bento-card bento-col-span-2 relative" style="padding: 0; min-height: 180px; border: none; overflow: hidden; display: flex; align-items: flex-end;">
+                <img src="/static/img/profile_bg_dark.jpeg?v=3.2.0" alt="Profile Background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.7;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
+                
+                <div style="position: relative; z-index: 2; padding: 20px; width: 100%;">
+                    <div class="flex-between w-full mb-16">
+                        <div id="user-avatar-container" onclick="document.getElementById('avatar-input').click()" 
+                            style="width: 64px; height: 64px; border-radius: 50%; background: var(--theme-color); border: 2px solid #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 20px rgba(191,90,242,0.5); cursor: pointer; overflow: hidden; position: relative;">
+                            <img id="user-avatar-img" src="" alt="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            <i id="user-avatar-icon" data-lucide="user" style="color: #fff; width: 32px; height: 32px;"></i>
+                            <div style="position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.4); color: #fff; font-size: 8px; text-align: center; padding: 2px 0;">EDIT</div>
+                        </div>
+                        <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
+                        <button onclick="openEditProfileModal()" style="width: auto; padding: 8px 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 24px; margin: 0; font-size: 12px; color: #fff;">Редагувати</button>
+                    </div>
+                    <h2 class="mb-0 mt-0 flex-center" style="justify-content: flex-start; font-size: 22px; color: #fff;">
+                        <span id="prof-name">Атлет</span>
+                        <span id="prof-mini-lvl" style="color:var(--accent-gold); font-size:16px; margin-left: 8px;"></span>
+                    </h2>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px;" id="prof-goal">...</div>
+                </div>
+            </div>
+
+            <!-- Square 1x1: AI Energy -->
+            <div class="bento-card bento-col-span-1 flex-column flex-center" style="padding: 20px; text-align: center; border: none; overflow: hidden; position: relative; background: #111;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(191,90,242,0.15) 0%, transparent 70%);"></div>
+                <img src="/static/img/ai_energy_dark.jpeg?v=3.2.0" alt="AI Energy" style="width: 48px; height: 48px; margin-bottom: 12px; position: relative; z-index: 1;">
+                <div id="prof-ai-energy" style="font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--theme-color); position: relative; z-index: 1; text-shadow: 0 0 10px rgba(191,90,242,0.5);">100%</div>
+                <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; position: relative; z-index: 1;">Енергія ШІ</div>
+            </div>
+
+            <!-- Square 1x1: Streak -->
+            <div class="bento-card bento-col-span-1 flex-column flex-center" style="padding: 20px; text-align: center; border-color: rgba(255, 149, 0, 0.2); background: rgba(255, 149, 0, 0.05);">
+                <i data-lucide="flame" style="color: #ff9500; width: 32px; height: 32px; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(255,149,0,0.5));"></i>
+                <div id="prof-mini-streak" style="font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: #ff9500; line-height: 1; text-shadow: 0 0 10px rgba(255,149,0,0.5);">0</div>
+                <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Днів поспіль</div>
+            </div>
+
+            <!-- Wide Card: Settings List -->
+            <div class="bento-card bento-col-span-2" style="padding: 8px 16px;">
+                <button class="flex-between w-full" style="background: transparent; border: none; padding: 12px 0; border-bottom: 1px solid var(--border-color); border-radius: 0; box-shadow: none;" onclick="SubscriptionManager.openModal()">
+                    <div class="flex-center gap-12">
+                        <div style="background: rgba(212, 175, 55, 0.1); padding: 8px; border-radius: 10px;"><i data-lucide="crown" style="color: #d4af37; width: 18px; height: 18px;"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">Керування підпискою</div>
+                            <div style="font-size: 12px; color: var(--hint-color);" id="prof-sub-tier">План: ...</div>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" style="color: var(--hint-color); width: 18px;"></i>
+                </button>
+                <button class="flex-between w-full" style="background: transparent; border: none; padding: 12px 0; border-bottom: 1px solid var(--border-color); border-radius: 0; box-shadow: none;" onclick="OnboardingTour.replay()">
+                    <div class="flex-center gap-12">
+                        <div style="background: rgba(191, 90, 242, 0.1); padding: 8px; border-radius: 10px;"><i data-lucide="help-circle" style="color: var(--theme-color); width: 18px; height: 18px;"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">Навчання</div>
+                            <div style="font-size: 12px; color: var(--hint-color);">Як користуватися?</div>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" style="color: var(--hint-color); width: 18px;"></i>
+                </button>
+                
+                <div id="btn-admin-panel" style="display: none;">
+                    <button class="flex-between w-full" style="background: transparent; border: none; padding: 12px 0; border-bottom: 1px solid var(--border-color); border-radius: 0; box-shadow: none;" onclick="window.location.href='/admin'">
+                        <div class="flex-center gap-12">
+                            <div style="background: rgba(191, 90, 242, 0.1); padding: 8px; border-radius: 10px;"><i data-lucide="settings" style="color: #bf5af2; width: 18px; height: 18px;"></i></div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">Супер Адмін Панель</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" style="color: var(--hint-color); width: 18px;"></i>
+                    </button>
+                </div>
+
+                <div id="trainer-switch-container" style="display: none;">
+                    <button class="flex-between w-full" style="background: transparent; border: none; padding: 12px 0; border-bottom: 1px solid var(--border-color); border-radius: 0; box-shadow: none;" onclick="window.location.href='/trainer'">
+                        <div class="flex-center gap-12">
+                            <div style="background: rgba(0, 234, 102, 0.1); padding: 8px; border-radius: 10px;"><i data-lucide="users" style="color: var(--success); width: 18px; height: 18px;"></i></div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">Панель Тренера</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" style="color: var(--hint-color); width: 18px;"></i>
+                    </button>
+                </div>
+                
+                <div id="btn-become-trainer" style="display: none;">
+                    <button class="flex-between w-full" style="background: transparent; border: none; padding: 12px 0; border-bottom: 1px solid var(--border-color); border-radius: 0; box-shadow: none;" onclick="if(typeof registerAsTrainer === 'function') registerAsTrainer()">
+                        <div class="flex-center gap-12">
+                            <div style="background: rgba(212, 175, 55, 0.1); padding: 8px; border-radius: 10px;"><i data-lucide="graduation-cap" style="color: var(--accent-gold); width: 18px; height: 18px;"></i></div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">Стати Тренером</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" style="color: var(--hint-color); width: 18px;"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="prof-trainer-status" class="bento-col-span-2 text-center"
+                style="display: none; background: rgba(10, 132, 255, 0.1); color: var(--client-blue); padding: 8px 16px; border-radius: 50px; font-size: 12px; font-weight: bold; border: 1px solid rgba(10, 132, 255, 0.2);">
+                В команді тренера
+            </div>
+
+            <div class="bento-card bento-col-span-2 comp-card">
+                <div class="flex-between">
+                    <h3 class="mt-0 mb-0 flex-center gap-8" style="color: var(--accent-gold);"
+                        data-i18n="title_my_comp"><i data-lucide="trophy"></i> Мої змагання</h3>
+                    <button onclick="openQuickCompModal()" class="mt-0"
+                        style="width: auto; padding: 6px 14px; font-size: 11px; background: rgba(212, 175, 55, 0.15); color: var(--accent-gold); border: none;"
+                        data-i18n="btn_settings">Налаштувати</button>
+                </div>
+
+                <div id="comp-active-view" class="mt-16" style="display: none;">
+                    <div style="font-size: 22px; font-weight: 900;" id="comp-sport-display">Спорт</div>
+                    <div class="text-muted mt-4" style="font-size: 14px;"><span data-i18n="comp_date_short">Дата:</span>
+                        <b id="comp-date-display" style="color: var(--text-color);">...</b>
+                    </div>
+                    <div class="mt-16"
+                        style="padding: 12px; background: rgba(0,0,0,0.4); border-radius: 12px; text-align: center; border: 1px solid var(--border-color);">
+                        <div class="flex-center gap-8"
+                            style="font-size: 18px; font-weight: 700; color: var(--theme-color);"
+                            id="comp-countdown-display"><i data-lucide="hourglass"></i> ...</div>
+                    </div>
+                </div>
+
+                <div id="comp-empty-view" class="mt-16">
+                    <p class="text-muted mb-0" style="font-size: 14px;" data-i18n="comp_empty_desc">Ви не готуєтесь до
+                        змагань. Бажаєте побудувати професійний макроцикл для виходу на пік форми?</p>
+                </div>
+            </div>
+
+            <h3 class="bento-col-span-2 mt-16 mb-0" data-i18n="title_phys_data">Фізичні дані</h3>
+
+            <div class="bento-card bento-col-span-1 text-center flex-column flex-center">
+                <div class="stat-value" id="prof-weight">0 кг</div>
+                <div class="text-muted" data-i18n="stat_cur_weight" style="font-size: 12px; text-transform: uppercase;">
+                    Поточна вага</div>
+            </div>
+            <div class="bento-card bento-col-span-1 text-center flex-column flex-center">
+                <div class="stat-value" id="prof-target" style="color: var(--accent-gold);">0 кг</div>
+                <div class="text-muted" data-i18n="stat_target_weight"
+                    style="font-size: 12px; text-transform: uppercase;">Цільова вага</div>
+            </div>
+            <div class="bento-card bento-col-span-1 text-center flex-column flex-center">
+                <div class="stat-value" id="prof-height">0 см</div>
+                <div class="text-muted" data-i18n="stat_height" style="font-size: 12px; text-transform: uppercase;">
+                    Зріст</div>
+            </div>
+            <div class="bento-card bento-col-span-1 text-center flex-column flex-center">
+                <div class="stat-value" id="prof-age">0</div>
+                <div class="text-muted" data-i18n="stat_age" style="font-size: 12px; text-transform: uppercase;">Вік
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2">
+                <div class="flex-between mb-8"><span class="text-muted" style="font-size: 14px;"
+                        data-i18n="stat_cur_goal">Поточна ціль:</span> <b id="prof-goal" class="text-right">...</b>
+                </div>
+                <div class="flex-between"><span class="text-muted" style="font-size: 14px;"
+                        data-i18n="stat_activity">Активність:</span> <b id="prof-activity" class="text-right">...</b>
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2" data-feature="AI_WORKOUT_GEN"
+                style="border-style: dashed; border-color: var(--client-blue); background: rgba(10, 132, 255, 0.05);">
+                <h3 class="mt-0 flex-center gap-8" style="color: var(--client-blue); justify-content: flex-start;"><i
+                        data-lucide="sparkles"></i> <span data-i18n="title_ai_adapt">ШІ-Адаптація</span></h3>
+                <p class="text-muted mt-0 mb-16" style="font-size: 13px;" data-i18n="desc_ai_adapt">Отримали травму?
+                    Змінився графік? Напишіть сюди, і ШІ миттєво адаптує ваш план.</p>
+                <textarea id="smart-rebuild-text" rows="3" placeholder="Напр: Я розтягнув спину..."></textarea>
+                <button id="btn-smart-rebuild" data-feature="AI_WORKOUT_GEN" onclick="if(SubscriptionGuard.checkOrPaywall('AI_WORKOUT_GEN')) smartRebuildPlan()" class="mt-16 flex-center gap-8"
+                    style="background: rgba(10, 132, 255, 0.15); color: var(--client-blue); border: 1px solid rgba(10, 132, 255, 0.3);"
+                    data-i18n="btn_rebuild_plan"><i data-lucide="refresh-cw"></i> Перебудувати план</button>
+            </div>
+
+            <div class="bento-card bento-col-span-2">
+                <h3 class="mt-0 mb-8" data-i18n="client_food_prefs">Вподобання та Алергії</h3>
+                <p class="text-muted mt-0 mb-16" style="font-size: 13px;" data-i18n="desc_allergies">Опишіть, що ви не
+                    їсте, щоб тренер склав ідеальний раціон.</p>
+                <textarea id="food-prefs-input" rows="3" placeholder="Напр: Алергія на арахіс..."></textarea>
+                <button class="secondary mt-16" onclick="saveFoodPrefs()" data-i18n="btn_save_for_coach">Зберегти для
+                    тренера</button>
+            </div>
+
+            <div class="bento-card bento-col-span-2">
+                <h3 class="mt-0 mb-16 flex-center gap-8" style="justify-content: flex-start;"><i
+                        data-lucide="shield"></i> Налаштування приватності</h3>
+                <div class="flex-between mb-16">
+                    <div>
+                        <div style="font-size: 15px; font-weight: 600;">Показувати вагу</div>
+                        <div style="font-size: 12px; color: var(--hint-color);">Дозволити тренеру бачити мою вагу</div>
+                    </div>
+                    <label class="toggle-switch mt-0">
+                        <input type="checkbox" id="privacy-share-weight" checked
+                            onchange="if(typeof updatePrivacySettings === 'function') updatePrivacySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="flex-between mb-16">
+                    <div>
+                        <div style="font-size: 15px; font-weight: 600;">Показувати цикл</div>
+                        <div style="font-size: 12px; color: var(--hint-color);">Дозволити тренеру бачити фази циклу
+                        </div>
+                    </div>
+                    <label class="toggle-switch mt-0">
+                        <input type="checkbox" id="privacy-share-cycle"
+                            onchange="if(typeof updatePrivacySettings === 'function') updatePrivacySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="flex-between">
+                    <div>
+                        <div style="font-size: 15px; font-weight: 600;">Фотографії їжі</div>
+                        <div style="font-size: 12px; color: var(--hint-color);">Дозволити тренеру бачити фото їжі</div>
+                    </div>
+                    <label class="toggle-switch mt-0">
+                        <input type="checkbox" id="privacy-share-food" checked
+                            onchange="if(typeof updatePrivacySettings === 'function') updatePrivacySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-view" class="view pb-100">
+        
+        <!-- Hero Illustration (Dark) -->
+        <div class="reveal bento-card bento-col-span-2 mt-24 mb-16" style="padding: 0; border: none; box-shadow: none; background: transparent;">
+            <img src="/static/img/dashboard_dark_hero.jpg?v=3.2.0" alt="Fitness Hub" style="width: 100%; height: auto; border-radius: 24px; box-shadow: var(--glass-shadow); display: block; object-fit: cover; max-height: 300px;">
+        </div>
+
+        <div class="flex-between reveal mb-16">
+            <h2 id="plan-title" class="mt-0 mb-0" data-i18n="title_plan">Ваш План</h2>
+        </div>
+
+        <div class="bento-grid reveal">
+            <!-- Weekly Recap Card (Dark) -->
+            <div class="bento-card bento-col-span-1 flex-column justify-center" style="padding: 0; overflow: hidden; cursor: pointer; border: none;" onclick="if(typeof openWeeklyRecapModal === 'function') openWeeklyRecapModal()">
+                <img src="/static/img/weekly_recap_dark.jpg?v=3.2.0" alt="Recap" style="width: 100%; height: 120px; object-fit: cover;">
+                <div style="padding: 16px;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-color);">Підсумки тижня</div>
+                    <div style="font-size: 12px; color: var(--hint-color); margin-top: 4px;">Переглянути прогрес</div>
+                </div>
+            </div>
+
+            <!-- Nutrition Card (Dark) -->
+            <div class="bento-card bento-col-span-1 flex-column justify-center" style="padding: 0; overflow: hidden; cursor: pointer; border: none;" onclick="navTo('nutrition-view', document.getElementById('nav-item-nutrition'))">
+                <img src="/static/img/nutrition_dark_card.jpg?v=3.2.0" alt="Nutrition" style="width: 100%; height: 120px; object-fit: cover;">
+                <div style="padding: 16px;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-color);">Харчування</div>
+                    <div style="font-size: 12px; color: var(--hint-color); margin-top: 4px;">Ваш раціон</div>
+                </div>
+            </div>
+
+            <div id="dashboard-comp-banner" class="bento-card bento-col-span-2"
+                style="display: none; background: rgba(212, 175, 55, 0.1); border-style: dashed; border-color: var(--accent-gold);">
+                <div class="flex-between">
+                    <div>
+                        <div
+                            style="font-size: 11px; color: var(--accent-gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <span data-i18n="dash_comp_prep">Підготовка до:</span>
+                        </div>
+                        <div class="mt-4" style="font-size: 18px; font-weight: 900;" id="dash-comp-sport">Спорт</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex-center gap-8"
+                            style="font-size: 20px; font-weight: 700; color: var(--theme-color);" id="dash-comp-days"><i
+                                data-lucide="hourglass"></i> --</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ai-insight-box" class="bento-card bento-col-span-2"
+                style="display: none; border-color: var(--border-hover);">
+                <div style="font-weight: 700; margin-bottom: 8px; color: var(--text-color); font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="ai_insight_title">Тренувальний цикл</div>
+                <div id="plan-explanation" class="text-muted" style="font-size: 15px; white-space: pre-wrap;"></div>
+            </div>
+
+            <div id="ai-projection-box" class="bento-card bento-col-span-2"
+                style="display: none; border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.05);">
+                <div style="font-weight: 700; margin-bottom: 8px; color: var(--accent-gold); font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="ai_proj_title">Розрахунковий прогноз</div>
+                <div id="plan-projections" style="font-size: 15px; color: var(--text-color); white-space: pre-wrap;">
+                </div>
+            </div>
+
+            <div id="day-tabs-container" class="day-tabs bento-col-span-2" style="display: none;"></div>
+
+            <div id="checkin-card" class="bento-card bento-col-span-2 relative"
+                style="border-color: var(--theme-color); display: none;">
+                <div class="breathing-blob"></div>
+                <h3 class="mt-0 relative" style="color: var(--theme-color); font-size: 18px; z-index: 1;"><span
+                        data-i18n="chk_title">Як ви себе почуваєте?</span></h3>
+                <p class="text-muted mb-24 relative" style="font-size: 14px; line-height: 1.4; z-index: 1;"></p>
+
+                <div class="relative" style="z-index: 1;">
+                    <label data-i18n="chk_sleep">Сон (1 - жахливо, 10 - ідеально)</label>
+                    <input type="range" id="chk-sleep" min="1" max="10" value="5">
+
+                    <label data-i18n="chk_energy">Енергія (1 - розбитий, 10 - повен сил)</label>
+                    <input type="range" id="chk-energy" min="1" max="10" value="5">
+
+                    <label data-i18n="chk_stress">Стрес (1 - дуже низький, 10 - паніка)</label>
+                    <input type="range" id="chk-stress" min="1" max="10" value="5">
+
+                    <label data-i18n="chk_soreness">Біль (1 - нічого, 10 - все болить)</label>
+                    <input type="range" id="chk-soreness" min="1" max="10" value="5">
+
+                    <button onclick="submitCheckin()" id="btn-checkin" class="mt-32"
+                        data-i18n="btn_adapt_workout">Адаптувати тренування</button>
+                </div>
+            </div>
+
+            <div id="coach-message-box" class="bento-card bento-col-span-2"
+                style="display: none; background: rgba(0, 234, 102, 0.05); border-style: dashed; border-color: var(--theme-color);">
+                <div
+                    style="font-weight: 700; margin-bottom: 8px; color: var(--theme-color); font-size: 14px; text-transform: uppercase;">
+                    <span data-i18n="msg_from_coach">Повідомлення Тренера</span>
+                </div>
+                <div id="coach-message-text" style="font-size: 15px; color: var(--text-color); white-space: pre-wrap;">
+                </div>
+            </div>
+
+            <div id="workout-container" class="bento-col-span-2"></div>
+
+            <div id="finish-workout-wrapper" class="bento-col-span-2 mt-24 mb-40" style="display: none;">
+                <button id="btn-finish-workout"
+                    onclick="if(typeof openWorkoutSummary === 'function') openWorkoutSummary()"
+                    class="mt-0 flex-center gap-8"
+                    style="background: var(--accent-gold); color: #000; box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);"
+                    data-i18n="btn_finish_workout"><i data-lucide="award"></i> Завершити тренування</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cycle-view" class="view pb-100">
+        <h2 class="reveal mt-24">Твій Цикл</h2>
+
+        <div class="bento-grid reveal">
+            <!-- Hero Card (2x1): Current Phase -->
+            <div class="bento-card bento-col-span-2 relative" style="padding: 0; min-height: 200px; border: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;">
+                <img src="/static/img/cycle_phase_dark.jpeg?v=3.2.0" alt="Cycle Phase" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.8;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 100%); z-index: 1;"></div>
+                
+                <div style="position: relative; z-index: 2; padding: 20px;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--theme-color); margin-bottom: 4px; font-weight: bold;">Поточна фаза</div>
+                    <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px;">
+                        <div id="cycle-ring-text" style="font-size: 42px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; line-height: 1; color: #fff;">День 1</div>
+                    </div>
+                    <div class="flex-center gap-12" style="justify-content: flex-start;">
+                        <button id="btn-log-period" onclick="if(typeof logPeriodStart === 'function') logPeriodStart()" style="margin: 0; width: auto; padding: 10px 16px; background: #ff2d55; color: #fff; font-size: 13px; font-weight: 600; border-radius: 12px; box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4); border: none;"><i data-lucide="droplet" style="width: 16px; height: 16px; margin-right: 6px;"></i>Відмітила початок</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Square 1x1: AI Daily Advice -->
+            <div class="bento-card bento-col-span-1 flex-column justify-center relative" data-feature="FEM_TECH_ADVANCED" style="padding: 0; overflow: hidden; border: none; cursor: pointer;" onclick="if(typeof generateCycleInsight === 'function') generateCycleInsight(this)">
+                <img src="/static/img/ai_advice_dark.jpeg?v=3.2.0" alt="AI Advice" style="width: 100%; height: 100px; object-fit: cover;">
+                <div style="padding: 16px;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-color);">ШІ-Порада дня</div>
+                    <div style="font-size: 12px; color: var(--hint-color); margin-top: 4px;">Медичний інсайт</div>
+                </div>
+            </div>
+
+            <!-- Square 1x1: Wellbeing Emojis -->
+            <div class="bento-card bento-col-span-1 flex-column flex-center text-center" style="padding: 16px; justify-content: center;">
+                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; color: var(--hint-color); margin-bottom: 12px;">Самопочуття</div>
+                <div class="flex-between w-full" style="padding: 0 10px; position: relative; z-index: 10;">
+                    <div id="mood-emoji-😫" class="mood-emoji" style="font-size: 28px; opacity: 0.4; cursor: pointer; transition: all 0.2s; position: relative; z-index: 11;" onclick="if(typeof logCycleWellbeing === 'function') logCycleWellbeing('😫')">😫</div>
+                    <div id="mood-emoji-😐" class="mood-emoji" style="font-size: 28px; opacity: 0.4; cursor: pointer; transition: all 0.2s; position: relative; z-index: 11;" onclick="if(typeof logCycleWellbeing === 'function') logCycleWellbeing('😐')">😐</div>
+                    <div id="mood-emoji-🤩" class="mood-emoji" style="font-size: 28px; opacity: 0.4; cursor: pointer; transition: all 0.2s; position: relative; z-index: 11;" onclick="if(typeof logCycleWellbeing === 'function') logCycleWellbeing('🤩')">🤩</div>
+                </div>
+            </div>
+
+            <!-- Wide Card: Mini Calendar & Action -->
+            <div class="bento-card bento-col-span-2">
+                <div class="flex-between mb-16">
+                    <h3 class="mt-0 mb-0 flex-center gap-8" style="font-size: 16px;"><i data-lucide="calendar-days"></i> Календар</h3>
+                    <button class="icon-btn mt-0" onclick="if(typeof openFullCalendar === 'function') openFullCalendar()" style="display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); cursor: pointer;">
+                        <i data-lucide="maximize-2" style="width: 16px; height: 16px; display: block;"></i>
+                    </button>
+                </div>
+                
+                <div id="cycle-mini-calendar" class="flex-between w-full text-muted mb-16" style="font-size: 12px; min-height: 45px;">
+                    <!-- Динамічно заповнюється через JS -->
+                </div>
+
+                <button class="secondary mt-0 flex-center gap-8 w-full"
+                    onclick="if(typeof adaptWorkoutForCycle === 'function') adaptWorkoutForCycle()"
+                    style="border-color: rgba(255,255,255,0.1); font-size: 13px;">
+                    <i data-lucide="dumbbell"></i> Адаптувати тренування під стан
+                </button>
+            </div>
+
+            <div class="bento-card bento-col-span-2 pt-24 pb-24">
+                <h3 id="cycle-symptoms-title" class="mt-0 mb-16 flex-center gap-8"
+                    style="font-size: 18px; justify-content: flex-start;"><i data-lucide="activity"></i> Твій стан</h3>
+
+                <p class="text-muted mb-8" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+                    <i data-lucide="droplets" style="width:14px;height:14px;margin-bottom:-2px;"></i> Виділення
+                </p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="flow" data-value="light"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'flow', 'light')">Легкі
+                    </div>
+                    <div class="symptom-chip" data-category="flow" data-value="medium"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'flow', 'medium')">Середні
+                    </div>
+                    <div class="symptom-chip" data-category="flow" data-value="heavy"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'flow', 'heavy')">Рясні
+                    </div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="zap"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Біль / Спазми</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="pain" data-value="0"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'pain', '0')">Немає</div>
+                    <div class="symptom-chip" data-category="pain" data-value="1"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'pain', '1')">Легкий</div>
+                    <div class="symptom-chip" data-category="pain" data-value="2"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'pain', '2')">Сильний</div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="smile"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Настрій</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="mood" data-value="calm"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'mood', 'calm')">Спокій
+                    </div>
+                    <div class="symptom-chip" data-category="mood" data-value="sad"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'mood', 'sad')">Апатія
+                    </div>
+                    <div class="symptom-chip" data-category="mood" data-value="irritated"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'mood', 'irritated')">
+                        Дратівливість</div>
+                    <div class="symptom-chip" data-category="mood" data-value="happy"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'mood', 'happy')">Щастя
+                    </div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="moon"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Сон та Енергія</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="sleep" data-value="insomnia"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sleep', 'insomnia')">
+                        Безсоння</div>
+                    <div class="symptom-chip" data-category="sleep" data-value="exhaustion"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sleep', 'exhaustion')">
+                        Виснаження</div>
+                    <div class="symptom-chip" data-category="sleep" data-value="energetic"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sleep', 'energetic')">
+                        Повен сил</div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="coffee"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Травлення / Апетит</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="digestion" data-value="sweet"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'digestion', 'sweet')">Тяга
+                        до солодкого</div>
+                    <div class="symptom-chip" data-category="digestion" data-value="salty"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'digestion', 'salty')">Тяга
+                        до солоного</div>
+                    <div class="symptom-chip" data-category="digestion" data-value="bloating"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'digestion', 'bloating')">
+                        Здуття</div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="user"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Тіло</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="physical" data-value="breasts"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'physical', 'breasts')">
+                        Чутливість грудей</div>
+                    <div class="symptom-chip" data-category="physical" data-value="acne"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'physical', 'acne')">
+                        Висипання</div>
+                    <div class="symptom-chip" data-category="physical" data-value="headache"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'physical', 'headache')">
+                        Головний біль</div>
+                </div>
+
+                <p class="text-muted mb-8 mt-16"
+                    style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;"><i data-lucide="heart"
+                        style="width:14px;height:14px;margin-bottom:-2px;"></i> Інтимність</p>
+                <div class="symptoms-carousel">
+                    <div class="symptom-chip" data-category="sexual_activity" data-value="unprotected"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sexual_activity', 'unprotected')">
+                        Незахищений</div>
+                    <div class="symptom-chip" data-category="sexual_activity" data-value="protected"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sexual_activity', 'protected')">
+                        Захищений</div>
+                    <div class="symptom-chip" data-category="sexual_activity" data-value="high_libido"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sexual_activity', 'high_libido')">
+                        Високий потяг</div>
+                    <div class="symptom-chip" data-category="sexual_activity" data-value="low_libido"
+                        onclick="if(typeof toggleSymptom === 'function') toggleSymptom(this, 'sexual_activity', 'low_libido')">
+                        Низький потяг</div>
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2">
+                <h3 class="mt-0 flex-center gap-8" style="font-size: 16px; justify-content: flex-start;"><i
+                        data-lucide="bar-chart-2"></i> Твоя історія циклів</h3>
+                <div class="chart-container mt-16" style="height: 250px; position: relative; width: 100%; display: block;"><canvas id="cycleHistoryChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="nutrition-view" class="view pb-100">
+        <h2 class="reveal mt-24" data-i18n="title_nutrition">Харчування</h2>
+
+        <!-- Горизонтальний тижневий календар (Fuelcast style) -->
+        <div class="weekly-calendar-container reveal mt-16 mb-24">
+            <div id="weekly-calendar" class="weekly-calendar flex-center gap-16"
+                style="overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; justify-content: flex-start; scrollbar-width: none;">
+                <!-- Дані генеруються через JS -->
+            </div>
+        </div>
+
+        <div class="bento-grid reveal">
+            <div class="bento-card bento-col-span-2" id="coach-nutrition-card"
+                style="display:none; border-color: rgba(10, 132, 255, 0.3); background: rgba(10, 132, 255, 0.05);">
+                <h3 class="mt-0" style="color: var(--client-blue); font-size: 16px;"><span
+                        data-i18n="title_coach_diet">Раціон від тренера</span></h3>
+                <p id="coach-nutrition-plan" class="mb-0"
+                    style="white-space: pre-wrap; font-size: 15px; color: var(--text-color); line-height: 1.5;"></p>
+            </div>
+
+            <!-- Hero-картка (2x1): ШІ-Сканер тарілки -->
+            <div class="bento-card bento-col-span-2 relative" style="padding: 0; min-height: 180px; border: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;">
+                <img src="/static/img/ai_food_scanner_dark.jpeg?v=3.2.0" alt="AI Food Scanner" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.7;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
+                
+                <div style="position: relative; z-index: 2; padding: 20px;">
+                    <div style="font-weight: 800; font-size: 20px; color: #fff; margin-bottom: 4px;">ШІ-Сканер тарілки</div>
+                    <div style="font-size: 13px; color: var(--hint-color); margin-bottom: 16px;">Миттєвий розрахунок калорій по фото</div>
+                    
+                    <input type="file" id="food-image-upload" accept="image/*" style="display: none;"
+                        onchange="if(SubscriptionGuard.checkOrPaywall('AI_FOOD_SCAN') && typeof analyzeFoodImage === 'function') analyzeFoodImage(event)">
+                    <label for="food-image-upload" id="btn-scan-food" data-feature="AI_FOOD_SCAN" class="flex-center gap-8 w-full m-0"
+                        style="padding: 14px; background: var(--theme-color); color: #fff; border-radius: 16px; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 20px rgba(191,90,242,0.4);"><i data-lucide="camera"></i> Сфотографувати їжу</label>
+                </div>
+            </div>
+
+            <!-- Широка картка: Калорії сьогодні -->
+            <div class="bento-card bento-col-span-2 flex-column gap-16 pt-24 pb-24" style="background: rgba(20, 20, 20, 0.95);">
+                <div class="flex-between w-full">
+                    <h3 class="mt-0 mb-0 flex-center gap-8" style="font-size: 16px;"><i data-lucide="zap" style="color: var(--theme-color);"></i> Спожито сьогодні</h3>
+                </div>
+                
+                <div class="flex-between w-full" style="align-items: flex-end;">
+                    <div class="flex-column" style="flex: 1;">
+                        <span id="cal-left-val" style="font-size: 42px; font-weight: 900; line-height: 1; font-family: 'Space Grotesk', sans-serif;">0</span>
+                        <span class="text-muted mt-8" style="font-size: 13px;">Залишилось Ккал</span>
+                    </div>
+                    
+                    <div class="flex-center" style="flex: 1; justify-content: flex-end;">
+                        <div class="text-right">
+                            <div id="cal-target-val" style="font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">0</div>
+                            <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase;">Ціль</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full mt-8" style="height: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); overflow: hidden;">
+                    <div id="cal-arc-progress-bar" style="height: 100%; background: var(--theme-color); transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Bento-трійка: БЖУ -->
+            <div class="bento-col-span-2" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                <!-- Carbs (Red) -->
+                <div class="bento-card flex-column flex-center text-center" style="padding: 16px 8px; background: rgba(255, 45, 85, 0.05); border-color: rgba(255, 45, 85, 0.1);">
+                    <span class="text-muted mb-8" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Вугл</span>
+                    <div style="font-size: 16px; font-weight: 800; color: #ff2d55; line-height: 1;" id="c-val-left">0</div>
+                    <div class="text-muted mt-4" style="font-size: 10px;" id="c-val-target">/0г</div>
+                </div>
+                <!-- Protein (Purple) -->
+                <div class="bento-card flex-column flex-center text-center" style="padding: 16px 8px; background: rgba(191, 90, 242, 0.05); border-color: rgba(191, 90, 242, 0.1);">
+                    <span class="text-muted mb-8" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Білки</span>
+                    <div style="font-size: 16px; font-weight: 800; color: #bf5af2; line-height: 1;" id="p-val-left">0</div>
+                    <div class="text-muted mt-4" style="font-size: 10px;" id="p-val-target">/0г</div>
+                </div>
+                <!-- Fat (Green) -->
+                <div class="bento-card flex-column flex-center text-center" style="padding: 16px 8px; background: rgba(50, 215, 75, 0.05); border-color: rgba(50, 215, 75, 0.1);">
+                    <span class="text-muted mb-8" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Жири</span>
+                    <div style="font-size: 16px; font-weight: 800; color: #32d74b; line-height: 1;" id="f-val-left">0</div>
+                    <div class="text-muted mt-4" style="font-size: 10px;" id="f-val-target">/0г</div>
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2 text-center flex-column flex-center">
+                <h3 class="mt-0 mb-16 text-muted"
+                    style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="card_water">
+                    Водний баланс</h3>
+                <div class="mb-24"
+                    style="font-size: 32px; font-weight: 900; color: var(--client-blue); font-family: 'Space Grotesk', sans-serif;"
+                    id="water-val">0 мл</div>
+                <div id="water-glasses-container" class="flex-center gap-8 mb-16 w-full" style="flex-wrap: wrap;"></div>
+            </div>
+
+            <div class="bento-card bento-col-span-2" data-feature="AI_RECIPE"
+                style="background: rgba(191, 90, 242, 0.05); border-style: dashed; border-color: rgba(191, 90, 242, 0.3);">
+                <h3 class="mt-0 flex-center gap-8"
+                    style="color: #bf5af2; font-size: 16px; justify-content: flex-start;"><i data-lucide="sparkles"></i>
+                    ШІ-Кухар</h3>
+                <p class="mb-16" style="font-size: 14px; color: var(--text-color); line-height: 1.4;">Перелічи продукти
+                    та <b style="color: #bf5af2;">обов'язково вкажи кількість</b> (напр: 2 яйця, 150г курячого філе, 1
+                    помідор), щоб ШІ точно розрахував порцію.</p>
+                <input type="text" id="fridge-ingredients" placeholder="Вкажи кількість (напр: 2 яйця, 150г філе...)"
+                    style="border-bottom-color: rgba(191, 90, 242, 0.3);">
+                <button
+                    onclick="const val = document.getElementById('fridge-ingredients').value; if(val.trim().length > 0 && !/\d/.test(val)) { if(!confirm('Увага: ти не вказав(ла) кількість або вагу продуктів (немає цифр). ШІ може розрахувати неправильну порцію. Все одно продовжити?')) return; } if(typeof generateFridgeRecipe === 'function') generateFridgeRecipe()"
+                    id="btn-fridge" class="mt-24 flex-center gap-8"
+                    style="background: rgba(191, 90, 242, 0.15); color: #bf5af2; border: 1px solid rgba(191, 90, 242, 0.3);"><i
+                        data-lucide="utensils"></i> Придумати рецепт</button>
+            </div>
+
+            <div class="bento-card bento-col-span-2" data-feature="AUTO_GROCERY"
+                style="background: rgba(50, 215, 75, 0.05); border-style: dashed; border-color: rgba(50, 215, 75, 0.3);">
+                <h3 class="mt-0 flex-center gap-8"
+                    style="color: var(--success); font-size: 16px; justify-content: flex-start;"><i
+                        data-lucide="shopping-cart"></i> Список покупок</h3>
+                <p class="mb-16" style="font-size: 14px; color: var(--text-color); line-height: 1.4;">ШІ проаналізує ваш
+                    план та згенерує список продуктів на тиждень.</p>
+                <button id="btn-generate-grocery" data-feature="AUTO_GROCERY"
+                    onclick="if(SubscriptionGuard.checkOrPaywall('AUTO_GROCERY') && typeof generateGroceryList === 'function') generateGroceryList()"
+                    class="mt-0 flex-center gap-8"
+                    style="background: rgba(50, 215, 75, 0.15); color: var(--success); border: 1px solid rgba(50, 215, 75, 0.3);"><i
+                        data-lucide="list-checks"></i> Згенерувати список на тиждень</button>
+                <div id="grocery-list-container" class="mt-16 flex-column gap-8" style="display: none;">
+                </div>
+            </div>
+            <div class="bento-card bento-col-span-2 text-center flex-column gap-16">                <button id="btn-start-scan" class="secondary mt-0 flex-center gap-8" data-feature="BARCODE_SCAN"
+                    onclick="if(typeof startWebScanner === 'function') startWebScanner();"
+                    style="padding: 16px; border-radius: 50px;" data-i18n="btn_scan_barcode"><i
+                        data-lucide="scan-barcode"></i> Сканувати штрих-код</button>
+                <div id="reader" class="mt-16 w-full"
+                    style="display: none; border-radius: 20px; overflow: hidden; border: 1px solid var(--border-color);">
+                </div>
+
+                <button id="btn-stop-scan" class="mt-16"
+                    onclick="if(typeof stopWebScanner === 'function') stopWebScanner();"
+                    style="display: none; background: rgba(255, 45, 85, 0.1); color: var(--danger); border: 1px solid rgba(255, 45, 85, 0.3);"
+                    data-i18n="btn_close_scanner">Закрити сканер</button>
+
+                <button id="btn-manual-barcode" class="mt-8 text-muted"
+                    onclick="if(typeof manualBarcodePrompt === 'function') manualBarcodePrompt();"
+                    style="display: none; background: transparent; border: none; text-decoration: underline;"
+                    data-i18n="btn_manual_barcode">Ввести цифри вручну</button>
+            </div>
+        </div>
+
+        <button class="secondary reveal mt-40 mb-24 flex-center gap-8 w-full"
+            onclick="if(typeof openFavoriteMealsModal === 'function') openFavoriteMealsModal()"
+            style="border-color: #ff2d55; color: #ff2d55; padding: 16px; border-radius: 16px;"><i
+                data-lucide="heart"></i> Мої улюблені страви</button>
+
+        <h3 class="reveal mt-40 mb-16" style="font-size: 18px;" data-i18n="title_add_food_manual">Додати вручну</h3>
+        <div class="bento-card reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="grid-column: span 2;"><label class="mt-0" data-i18n="label_dish_name">Назва страви</label><input
+                    type="text" id="food-name" placeholder="Напр: Вівсянка з бананом"></div>
+            <div><label class="mt-0" data-i18n="label_weight_g">Вага (г)</label><input type="number" id="food-weight">
+            </div>
+            <div><label class="mt-0" data-i18n="label_cals">Калорії</label><input type="number" id="food-cal"></div>
+            <div><label class="mt-0" data-i18n="label_p">Білки</label><input type="number" id="food-prot"></div>
+            <div><label class="mt-0" data-i18n="label_f">Жири</label><input type="number" id="food-fat"></div>
+            <div style="grid-column: span 2;"><label class="mt-0" data-i18n="label_c">Вуглеводи</label><input
+                    type="number" id="food-carb"></div>
+            <button class="mt-0" style="grid-column: span 2; background: var(--text-color); color: #000;"
+                onclick="addManualFood()" data-i18n="btn_add_food">Записати</button>
+        </div>
+
+        <h3 class="reveal mt-40 mb-16" style="font-size: 18px;" data-i18n="title_history_today">Історія за сьогодні</h3>
+        <div id="food-logs-container" class="reveal flex-column gap-8"></div>
+    </div>
+
+    <div id="progress-view" class="view pb-100">
+        <h2 class="reveal mt-24" data-i18n="title_analytics">Аналітика Тіла</h2>
+
+        <div class="bento-grid reveal mt-16">
+            
+            <!-- Hero Card (2x1): Weight Chart -->
+            <div class="bento-card bento-col-span-2 relative flex-column justify-center" style="padding: 0; min-height: 140px; border: none; overflow: hidden; cursor: pointer;" onclick="if(typeof openWeightModal === 'function') openWeightModal()">
+                <img src="/static/img/weight_chart_dark.jpeg?v=3.2.0" onerror="this.src='https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80'" style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.7;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
+                
+                <div class="relative w-full flex-column" style="z-index: 2; padding: 16px; height: 100%; justify-content: space-between;">
+                    <div>
+                        <div class="flex-between w-full" style="align-items: center;">
+                            <div style="font-weight: 800; font-size: 15px; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                Динаміка ваги <i data-lucide="activity" style="width:16px; color: var(--client-blue);"></i>
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--hint-color); margin-top: 4px;">Графік прогресу</div>
+                    </div>
+                </div>
+                <!-- Stop propagation so clicking '+' only opens the log modal, not the graph modal -->
+                <button class="icon-btn" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: #fff; border: 1px solid rgba(255,255,255,0.1); width: 34px; height: 34px; z-index: 3; display: flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); openLogWeightModal()">
+                    <i data-lucide="plus" style="width:16px; height: 16px;"></i>
+                </button>
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 70%; z-index: 1;">
+                    <canvas id="weightChartCard"></canvas>
+                </div>
+            </div>
+
+            <!-- Square 1x1: Power Records -->
+            <div class="bento-card bento-col-span-1 relative flex-column justify-center" style="padding: 0; min-height: 140px; border: none; overflow: hidden; cursor: pointer;" onclick="if(typeof openStrengthRecordsModal === 'function') openStrengthRecordsModal()">
+                <img src="/static/img/power_records_dark.jpeg?v=3.2.0" onerror="this.src='https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80'" style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.7;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
+                <div class="relative w-full flex-column" style="z-index: 2; padding: 16px; height: 100%; justify-content: space-between;">
+                    <div>
+                        <div style="font-weight: 800; font-size: 15px; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+                            1RM Рекорди <i data-lucide="dumbbell" style="width:16px; color: var(--accent-gold);"></i>
+                        </div>
+                        <div style="font-size: 11px; color: var(--hint-color); margin-top: 4px;">Натисни для дій</div>
+                    </div>
+                </div>
+                <div style="display: none;"><canvas id="exerciseChart"></canvas></div>
+            </div>
+
+            <!-- Square 1x1: Body Measurements -->
+            <div class="bento-card bento-col-span-1 relative flex-column justify-center" style="padding: 0; min-height: 140px; border: none; overflow: hidden; cursor: pointer;" onclick="if(typeof openMetricsModal === 'function') openMetricsModal()">
+                <img src="/static/img/body_measurements_dark.jpeg?v=3.2.0" onerror="this.src='https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80'" style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.7;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
+                <div class="relative w-full flex-column" style="z-index: 2; padding: 16px; height: 100%; justify-content: space-between;">
+                    <div>
+                        <div style="font-weight: 800; font-size: 15px; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+                            Заміри тіла <i data-lucide="ruler" style="width:16px; color: var(--theme-color);"></i>
+                        </div>
+                        <div style="font-size: 11px; color: var(--hint-color); margin-top: 4px;">Графік прогресу</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bento-col-span-2">
+                <button onclick="if(SubscriptionGuard.checkOrPaywall('AI_ANALYTICS') && typeof generatePDFReport === 'function') generatePDFReport();" 
+                    class="flex-center gap-8 w-full m-0" id="btn-generate-report"
+                    style="padding: 18px; border-radius: 20px; border: none; background: linear-gradient(135deg, var(--theme-color) 0%, #3742fa 100%); color: #fff; font-size: 16px; font-weight: 700; box-shadow: 0 8px 24px rgba(123, 77, 244, 0.4);">
+                    <i data-lucide="sparkles"></i> Згенерувати ШІ-звіт
+                </button>
+            </div>
+
+            <div class="bento-card bento-col-span-2" style="overflow-x: auto;">
+                <h3 class="mt-0 mb-16" style="font-size: 16px;">Історія активності</h3>
+                <div id="heatmap-container" class="gap-8" style="display: flex; min-width: max-content;">
+                    <p class="text-center text-muted w-full" style="font-size: 14px;">Завантаження карти...</p>
+                </div>
+                <div class="flex-center gap-8 mt-16 text-muted"
+                    style="justify-content: flex-end; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                    Меньше
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background: rgba(255,255,255,0.05);">
+                    </div>
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background: rgba(50, 215, 75, 0.3);">
+                    </div>
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background: rgba(50, 215, 75, 0.6);">
+                    </div>
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background: rgba(50, 215, 75, 1);"></div>
+                    Більше
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2 text-center pt-24 pb-24">
+                <h3 class="mt-0 mb-32"
+                    style="color: var(--text-color); font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="title_muscle_recovery">Відновлення м'язів</h3>
+
+                <div class="flex-center gap-16" style="overflow: hidden; background: transparent;">
+                    <div class="relative w-full" style="max-width: 180px;">
+                        <svg id="svg-body-front" viewBox="0 0 750 1500" class="w-full"
+                            style="height: auto; transform: translateZ(0);"></svg>
+                        <span class="text-muted"
+                            style="position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; letter-spacing: 0.1em;"
+                            data-i18n="map_front">ПЕРЕД</span>
+                    </div>
+                    <div class="relative w-full" style="max-width: 180px;">
+                        <svg id="svg-body-back" viewBox="700 0 750 1500" class="w-full"
+                            style="height: auto; transform: translateZ(0);"></svg>
+                        <span class="text-muted"
+                            style="position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; letter-spacing: 0.1em;"
+                            data-i18n="map_back">ЗАД</span>
+                    </div>
+                </div>
+
+                <div class="flex-between mt-40 text-muted" style="font-size: 12px; font-weight: 500;">
+                    <span class="flex-center gap-8">
+                        <div
+                            style="width:8px; height:8px; border-radius:50%; background:#32d74b; box-shadow: 0 0 8px #32d74b;">
+                        </div> <span data-i18n="map_legend_fresh">Свіжі</span>
+                    </span>
+                    <span class="flex-center gap-8">
+                        <div
+                            style="width:8px; height:8px; border-radius:50%; background:#ffd60a; box-shadow: 0 0 8px #ffd60a;">
+                        </div> <span data-i18n="map_legend_process">В процесі</span>
+                    </span>
+                    <span class="flex-center gap-8">
+                        <div
+                            style="width:8px; height:8px; border-radius:50%; background:#ff453a; box-shadow: 0 0 8px #ff453a;">
+                        </div> <span data-i18n="map_legend_tired">Втомлені</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="bento-card bento-col-span-2">
+                <h3 class="mt-0" style="font-size: 16px;" data-i18n="card_measurements">Заміри тіла (см)</h3>
+                <div class="flex-between gap-16 mt-16" style="flex-wrap: wrap;">
+                    <div style="width: calc(50% - 8px);"><label class="mt-0" data-i18n="label_waist">Талія</label><input
+                            type="number" id="metric-waist" step="0.1"></div>
+                    <div style="width: calc(50% - 8px);"><label class="mt-0" data-i18n="label_hips">Стегна</label><input
+                            type="number" id="metric-hips" step="0.1"></div>
+                    <div style="width: calc(50% - 8px);"><label class="mt-0" data-i18n="label_chest">Груди</label><input
+                            type="number" id="metric-chest" step="0.1"></div>
+                    <div style="width: calc(50% - 8px);"><label class="mt-0"
+                            data-i18n="label_biceps">Біцепс</label><input type="number" id="metric-biceps" step="0.1">
+                    </div>
+                </div>
+                <button class="secondary mt-24" id="btn-save-metrics" onclick="submitBodyMetrics()"
+                    data-i18n="btn_save_metrics">Зберегти заміри</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="coach-view" class="view pb-100">
+        <h2 class="reveal mt-24" data-i18n="title_coach">Ваш Наставник</h2>
+        <div class="bento-grid reveal">
+            <!-- Hero Illustration (Dark Coach) -->
+            <div class="bento-card bento-col-span-2 mb-8" style="padding: 0; border: none; box-shadow: none; background: transparent;">
+                <img src="/static/img/coach_dark_hero.jpg?v=3.2.0" alt="Coach Dashboard" style="width: 100%; height: auto; border-radius: 24px; box-shadow: var(--glass-shadow); display: block; object-fit: cover; max-height: 250px;">
+            </div>
+
+            <div class="bento-card bento-col-span-2 text-center pt-40 pb-40">
+                <div class="flex-center mb-24"
+                    style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); margin: 0 auto;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="mt-0" style="font-size: 20px;" data-i18n="title_personal_coach">Персональний супровід</h3>
+                <p id="coach-status-text" class="text-muted mb-32" style="font-size: 15px; line-height: 1.5;"
+                    data-i18n="loading_ai">Завантаження даних...</p>
+
+                <button onclick="contactCoach()"
+                    class="mb-16 mt-0" style="background: var(--text-color); color: #000;"
+                    data-i18n="btn_ask_question">Задати питання</button>
+                <button class="secondary mt-0"
+                    onclick="contactCoach(true)"
+                    data-i18n="btn_send_video">Надіслати відео на розбір</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gamification-view" class="view pb-100">
+        <h2 class="reveal mt-24">Твої Досягнення</h2>
+        
+        <div class="bento-grid reveal mt-16">
+            <!-- Hero Card (2x1): Current Rank -->
+            <div class="bento-card bento-col-span-2 relative" style="padding: 0; min-height: 180px; border: none; overflow: hidden; display: flex; align-items: center;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(0,0,0,0) 100%); z-index: 1;"></div>
+                
+                <div class="flex-between w-full" style="position: relative; z-index: 2; padding: 20px;">
+                    <div class="flex-column" style="flex: 1;">
+                        <div class="text-muted mb-4" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: bold; color: var(--accent-gold);">Твій поточний ранг</div>
+                        <div id="game-lvl" style="font-size: 64px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; line-height: 1; color: var(--text-color); text-shadow: 0 0 20px rgba(255,255,255,0.2);">1</div>
+                        <div class="mt-8" style="font-size: 13px; color: var(--hint-color);">Рівень Атлета</div>
+                    </div>
+                    <div style="width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
+                        <img src="/static/img/rank_medal_dark.jpeg?v=3.2.0" alt="Rank Medal" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.3));">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Square 1x1: Streak -->
+            <div class="bento-card bento-col-span-1 flex-column flex-center text-center relative" style="padding: 20px; border-color: rgba(255, 149, 0, 0.2); background: rgba(255, 149, 0, 0.05); overflow: hidden;">
+                <img src="/static/img/streak_fire_dark.jpeg?v=3.2.0" alt="Streak Fire" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.2; z-index: 0; pointer-events: none;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #ff9500; margin-bottom: 8px; position: relative; z-index: 1;">Вогник</div>
+                <div id="game-streak" style="font-size: 36px; font-weight: 900; color: #ff9500; font-family: 'Space Grotesk', sans-serif; line-height: 1; position: relative; z-index: 1;">0</div>
+                <div class="text-muted mt-4" style="font-size: 11px; position: relative; z-index: 1;">Днів поспіль</div>
+            </div>
+
+            <!-- Square 1x1: Next Rank Progress -->
+            <div class="bento-card bento-col-span-1 flex-column flex-center text-center" style="padding: 20px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: var(--theme-color); margin-bottom: 8px;">До наступного</div>
+                <div class="relative flex-center" style="width: 60px; height: 60px; margin: 8px 0;">
+                    <svg viewBox="0 0 100 100" class="w-full" style="transform: rotate(-90deg);">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
+                        <circle id="game-exp-ring" cx="50" cy="50" r="45" fill="none" stroke="var(--theme-color)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;"></circle>
+                    </svg>
+                    <i data-lucide="arrow-up" style="position: absolute; color: var(--theme-color); width: 20px;"></i>
+                </div>
+                <div style="font-size: 11px; color: var(--hint-color);"><span id="game-exp">0</span> / <span id="game-exp-need">100</span> EXP</div>
+            </div>
+            
+            <!-- Rules and Freezes under Bento -->
+            <div class="bento-col-span-2 flex-between gap-16 mt-8">
+                <button class="bento-card flex-center gap-8 w-full" style="padding: 12px; margin: 0; background: rgba(10, 132, 255, 0.1); border-color: rgba(10, 132, 255, 0.3); color: var(--client-blue);" onclick="if(typeof buyFreeze === 'function') buyFreeze()">
+                    <i data-lucide="snowflake" style="width: 16px;"></i> Заморозка: <b id="game-freezes">0</b>
+                </button>
+            </div>
+        </div>
+
+        <h3 class="reveal mt-40 mb-16 flex-between" style="font-size: 18px;">
+            <span class="flex-center gap-8"><i data-lucide="globe"></i> Стрічка друзів</span>
+            <button onclick="if(typeof loadSocialFeed === 'function') loadSocialFeed()" class="mt-0 flex-center"
+                style="width: auto; padding: 6px 10px; font-size: 12px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-color);"><i
+                    data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i></button>
+        </h3>
+        <div id="social-feed-container" class="reveal flex-column gap-8 mb-24">
+            <p class="text-center text-muted" style="font-size: 14px;">Завантаження подій...</p>
+        </div>
+
+        <h3 class="reveal mt-40 mb-16 flex-center gap-8" style="font-size: 18px; justify-content: flex-start;"><i
+                data-lucide="target"></i> Щоденні квести</h3>
+        <div id="quests-container" class="reveal flex-column gap-8 mb-24">
+            <p class="text-center text-muted" style="font-size: 14px;">Завантаження квестів...</p>
+        </div>
+
+        <h3 class="reveal mt-40 mb-16 flex-center gap-8" style="font-size: 18px; justify-content: flex-start;"><i
+                data-lucide="trophy"></i> Таблиця лідерів</h3>
+        <div class="reveal flex-between gap-8 mb-16">
+            <button id="btn-tab-global"
+                onclick="if(typeof switchLeaderboard === 'function') switchLeaderboard('global')" class="mt-0"
+                style="flex: 1; padding: 10px 5px; font-size: 12px; background: var(--text-color); color: #000;">Світ</button>
+            <button id="btn-tab-team" onclick="if(typeof switchLeaderboard === 'function') switchLeaderboard('team')"
+                class="secondary mt-0" style="flex: 1; padding: 10px 5px; font-size: 12px;">Команда</button>
+            <button id="btn-tab-friends"
+                onclick="if(typeof switchLeaderboard === 'function') switchLeaderboard('friends')"
+                class="secondary mt-0" style="flex: 1; padding: 10px 5px; font-size: 12px;">Друзі</button>
+            <button id="btn-tab-family"
+                style="display: none; flex: 1; padding: 10px 5px; font-size: 12px;"
+                onclick="if(typeof switchLeaderboard === 'function') switchLeaderboard('family')"
+                class="secondary mt-0">Сім'я</button>
+        </div>
+
+        <button class="secondary reveal flex-center gap-8 w-full mb-16 mt-0" onclick="inviteFriend()"
+            style="border-color: var(--client-blue); color: var(--client-blue);"><i data-lucide="user-plus"></i>
+            Запросити друга</button>
+
+        <div id="leaderboard-container" class="bento-card reveal pt-16 pb-16">
+            <p class="text-center text-muted mb-0 mt-0" style="font-size: 14px;">Завантаження рейтингу...</p>
+        </div>
+
+        <h3 class="reveal mt-40 mb-16 flex-center gap-8" style="font-size: 18px; justify-content: flex-start;"><i
+                data-lucide="swords"></i> Дуелі та Виклики</h3>
+        <button class="secondary mt-0 flex-center gap-8 w-full mb-16"
+            onclick="if(typeof openCreateDuelModal === 'function') openCreateDuelModal()"
+            style="border-color: #ff2d55; color: #ff2d55;"><i data-lucide="swords"></i> Кинути виклик</button>
+        <div id="duels-container" class="reveal flex-column gap-16"></div>
+
+        <h3 class="reveal mt-40 mb-16" style="font-size: 18px;" data-i18n="title_achievements">Ваші Досягнення</h3>
+        <div id="achievements-container" class="reveal flex-column gap-16"></div>
+    </div>
+
+    <div id="recipe-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="recipe-title" class="mt-0 pb-16"
+                style="color: #bf5af2; border-bottom: 1px solid var(--border-color); font-size: 22px;">Рецепт</h3>
+            <div class="flex-between mb-24 mt-16"
+                style="font-size: 13px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; border: 1px solid var(--border-color);">
+                <div class="text-center">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">Ккал</div>
+                    <div class="mt-4" style="font-weight: bold; font-size: 16px;" id="recipe-cal">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">Білки</div>
+                    <div class="mt-4" style="font-weight: bold; font-size: 16px;" id="recipe-p">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">Жири</div>
+                    <div class="mt-4" style="font-weight: bold; font-size: 16px;" id="recipe-f">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">Вугл.</div>
+                    <div class="mt-4" style="font-weight: bold; font-size: 16px;" id="recipe-c">0</div>
+                </div>
+            </div>
+            <div id="recipe-text" class="mb-32"
+                style="font-size: 15px; color: var(--text-color); white-space: pre-wrap; line-height: 1.6;"></div>
+            <button id="btn-eat-recipe" onclick="if(typeof eatRecipe === 'function') eatRecipe()" class="mt-0 mb-8"
+                style="background: var(--text-color); color: #000;"><i data-lucide="check-circle"></i> Записати</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('recipe-modal')"
+                data-i18n="btn_close">Закрити</button>
+        </div>
+    </div>
+
+    <div id="favorite-meals-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-center gap-8"
+                style="border-bottom: 1px solid var(--border-color); font-size: 22px; color: #ff2d55; justify-content: flex-start;">
+                <i data-lucide="heart"></i> Улюблені страви
+            </h3>
+            <div id="favorite-meals-list" class="flex-column gap-8 mb-24 mt-16"
+                style="max-height: 60vh; overflow-y: auto;">
+                <p class="text-center text-muted" style="font-size: 14px;">Завантаження...</p>
+            </div>
+            <button class="secondary delete mt-0 w-full" style="border: none;"
+                onclick="closeModal('favorite-meals-modal')" data-i18n="btn_close">Закрити</button>
+        </div>
+    </div>
+
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;"
+                data-i18n="title_edit_profile">Редагувати дані</h3>
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full"><label class="mt-0" data-i18n="label_height">Зріст (см)</label><input type="number"
+                        id="edit-height"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_age">Вік</label><input type="number"
+                        id="edit-age"></div>
+            </div>
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full"><label class="mt-0" data-i18n="label_weight">Вага</label><input type="number"
+                        id="edit-weight" step="0.1"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_target_weight">Цільова</label><input
+                        type="number" id="edit-target-weight" step="0.1"></div>
+            </div>
+            <label class="mt-16" data-i18n="label_activity">Рівень активності</label>
+            <select id="edit-activity">
+                <option value="sedentary" data-i18n="act_sedentary">Сидячий</option>
+                <option value="light" data-i18n="act_light">Легкий</option>
+                <option value="medium" data-i18n="act_medium">Середній</option>
+                <option value="active" data-i18n="act_active">Високий</option>
+                <option value="very_active" data-i18n="act_very_active">Дуже високий</option>
+            </select>
+
+            <div id="edit-competition-container" class="mt-16"
+                style="display: none; background: rgba(212, 175, 55, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed rgba(212, 175, 55, 0.3);">
+                <label style="color: var(--accent-gold);" class="mt-0" data-i18n="comp_sport_label">Ваш вид
+                    спорту</label>
+                <input type="text" id="edit_comp_sport">
+                <label style="color: var(--accent-gold);" class="mt-16" data-i18n="comp_date_label">Дата змагань</label>
+                <input type="date" id="edit_comp_date">
+            </div>
+
+            <div id="edit-cycle-container" class="mt-16"
+                style="display: none; background: rgba(255, 45, 85, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed rgba(255, 45, 85, 0.3);">
+                <label style="color: #ff2d55;" class="mt-0" data-i18n="cycle_start_label">Перший день циклу</label>
+                <input type="date" id="edit_cycle_start_date">
+                <label style="color: #ff2d55;" class="mt-16" data-i18n="cycle_length_label">Тривалість (днів)</label>
+                <input type="number" id="edit_cycle_length">
+            </div>
+
+            <button onclick="submitEditProfile()" class="mt-32" data-i18n="btn_save">Зберегти зміни</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;"
+                onclick="closeModal('edit-profile-modal')" data-i18n="btn_cancel">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="strength-records-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">Силові рекорди (1RM)</h3>
+            <div class="mt-16 mb-16">
+                <label>Оберіть вправу</label>
+                <select id="exercise-select" onchange="if(typeof renderStrengthChart === 'function') renderStrengthChart()"></select>
+            </div>
+            
+            <div class="mb-24 relative" style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid var(--border-color); height: 220px; width: 100%;">
+                <canvas id="strengthChartModal"></canvas>
+            </div>
+            
+            <div class="flex-between gap-16 mb-24">
+                <div class="w-full">
+                    <label class="mt-0">Новий 1RM (кг)</label>
+                    <input type="number" id="new-1rm-weight" step="0.5">
+                </div>
+                <div class="flex-column justify-center mt-24">
+                    <button onclick="if(typeof save1RMRecord === 'function') save1RMRecord()" class="mt-0" style="padding: 12px 20px;">Записати</button>
+                </div>
+            </div>
+
+            <div class="pt-24 pb-24" style="background: rgba(212, 175, 55, 0.05); padding: 20px; border-radius: 16px; border: 1px dashed rgba(212, 175, 55, 0.3);">
+                <h4 class="mt-0 flex-center gap-8" style="color: var(--accent-gold); font-size: 15px; justify-content: flex-start;"><i data-lucide="target"></i> ШІ-Вихід на пік</h4>
+                <p class="text-muted mt-0 mb-16" style="font-size: 13px;">Згенерувати ШІ-план тренувань для встановлення нового рекорду.</p>
+                <div class="flex-between gap-16">
+                     <div class="w-full">
+                         <label class="mt-0">Ціль (кг)</label>
+                         <input type="number" id="ai-peak-target" step="0.5">
+                     </div>
+                     <div class="w-full">
+                         <label class="mt-0">Тижнів</label>
+                         <input type="number" id="ai-peak-weeks" value="4">
+                     </div>
+                </div>
+                <button id="btn-generate-peak" class="secondary mt-16 flex-center gap-8 w-full" onclick="if(typeof generatePeakPlan === 'function') generatePeakPlan()" style="border-color: rgba(212, 175, 55, 0.3); color: var(--accent-gold);"><i data-lucide="zap"></i> Створити план</button>
+            </div>
+
+            <button class="secondary delete mt-24 w-full" style="border: none;" onclick="closeModal('strength-records-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <div id="workout-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-between" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">
+                <span id="modal-title">Назва вправи</span>
+                <button id="btn-substitute-ex"
+                    onclick="if(typeof requestExerciseSubstitute === 'function') requestExerciseSubstitute()"
+                    style="width: auto; padding: 4px 8px; margin: 0; background: rgba(10, 132, 255, 0.1); color: var(--client-blue); font-size: 12px; border: 1px solid rgba(10, 132, 255, 0.3); border-radius: 8px; box-shadow: none; display: flex; align-items: center; gap: 4px;"><i
+                        data-lucide="shuffle" style="width: 14px; height: 14px;"></i> Замінити</button>
+            </h3>
+            <div id="log-form" class="log-container active mt-16">
+                <div class="mb-24"
+                    style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid var(--border-color);">
+                    <div class="flex-between">
+                        <div>
+                            <span class="text-muted"
+                                style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;"
+                                data-i18n="target_reps">Ціль:</span>
+                            <div id="modal-target" class="mt-4"
+                                style="font-weight: 700; font-size: 18px; color: var(--theme-color);">...</div>
+                        </div>
+                        <div id="modal-progress"
+                            style="font-size: 13px; color: var(--text-color); font-weight: 600; display: none;">Підхід:
+                            0/0</div>
+                    </div>
+                </div>
+
+                <div id="input-strength" class="dynamic-input">
+                    <div class="flex-between gap-16">
+                        <div class="w-full relative">
+                            <label class="mt-0 flex-between w-full" data-i18n="label_weight_kg"><span>Вага (кг)</span>
+                                <button onclick="if(typeof openBarbellModal === 'function') openBarbellModal()"
+                                    style="width: auto; padding: 2px 6px; margin: 0; background: transparent; color: var(--theme-color); font-size: 11px; box-shadow: none; border: 1px solid var(--theme-color); border-radius: 6px;"><i
+                                        data-lucide="calculator"
+                                        style="width: 12px; height: 12px;"></i></button></label>
+                            <input type="number" id="set-weight" inputmode="decimal">
+                        </div>
+                        <div class="w-full"><label class="mt-0" data-i18n="label_reps">Повторення</label><input
+                                type="number" id="set-reps" inputmode="numeric"></div>
+                    </div>
+                </div>
+                <div id="input-cardio" class="dynamic-input" style="display: none;">
+                    <div class="flex-between gap-16">
+                        <div class="w-full"><label class="mt-0" data-i18n="label_duration">Час (хв)</label><input
+                                type="number" id="set-duration" inputmode="decimal"></div>
+                        <div class="w-full"><label class="mt-0" data-i18n="label_distance">Відстань (км)</label><input
+                                type="number" id="set-distance" inputmode="decimal"></div>
+                    </div>
+                </div>
+                <div id="input-warmup" class="dynamic-input" style="display: none;">
+                    <p class="text-center text-muted mb-8" style="font-size: 15px;" data-i18n="desc_warmup">Ця вправа не
+                        потребує запису ваги.</p>
+                </div>
+
+                <input type="file" id="set-video" accept="video/*" style="display: none;">
+                <label for="set-video" id="set-video-label" class="secondary mt-16 flex-center gap-8 w-full"
+                    style="padding: 12px; border-radius: 12px; cursor: pointer; border-style: dashed;"><i
+                        data-lucide="video"></i> Прикріпити відео техніки</label>
+
+                <button onclick="saveSet()" id="btn-save-set" class="mt-32" data-i18n="btn_save_set">Записати і
+                    Відпочити</button>
+                <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('workout-modal')"
+                    data-i18n="btn_cancel">Скасувати</button>
+            </div>
+
+            <div id="timer-view" class="timer-container text-center pt-24 pb-24">
+                <p class="text-muted mb-8" style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="timer_title">Час відновлення</p>
+                <div class="timer-display mb-32" id="timer-text"
+                    style="font-size: 80px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; line-height: 1; color: var(--theme-color);">
+                    01:30</div>
+                <div class="flex-center gap-16 mb-24">
+                    <button class="mt-0"
+                        style="width: auto; padding: 12px 24px; background: rgba(255,255,255,0.05); color: var(--text-color);"
+                        onclick="adjustTimer(-15)">-15s</button>
+                    <button class="mt-0"
+                        style="width: auto; padding: 12px 24px; background: rgba(255,255,255,0.05); color: var(--text-color);"
+                        onclick="adjustTimer(30)">+30s</button>
+                </div>
+                <button class="secondary mt-0" onclick="skipTimer()" data-i18n="btn_skip_timer">Пропустити
+                    таймер</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-food-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;"
+                data-i18n="title_edit_food">Редагувати запис</h3>
+            <input type="hidden" id="edit-food-id">
+            <label class="mt-16" data-i18n="label_dish_name">Назва страви</label>
+            <input type="text" id="edit-food-name">
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full"><label class="mt-0" data-i18n="label_weight_g">Вага (г)</label><input type="number"
+                        id="edit-food-weight"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_cals">Калорії</label><input type="number"
+                        id="edit-food-cal"></div>
+            </div>
+            <div class="flex-between gap-8 mt-16">
+                <div class="w-full"><label class="mt-0" data-i18n="label_p">Білки</label><input type="number"
+                        id="edit-food-prot"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_f">Жири</label><input type="number"
+                        id="edit-food-fat"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_c">Вугл.</label><input type="number"
+                        id="edit-food-carb"></div>
+            </div>
+
+            <div class="mt-24 pt-24 pb-24"
+                style="padding: 20px; background: rgba(10, 132, 255, 0.05); border: 1px dashed rgba(10, 132, 255, 0.3); border-radius: 16px;">
+                <h4 class="mt-0 flex-center gap-8"
+                    style="color: var(--client-blue); font-size: 15px; justify-content: flex-start;"><i
+                        data-lucide="sparkles"></i> ШІ-Перерахунок</h4>
+                <p class="text-muted mt-0" style="font-size: 13px;">ШІ помилився? Напишіть, що змінити.</p>
+                <input type="text" id="edit-food-correction" placeholder="Напр: 'Це було 200г свинини'"
+                    style="border-bottom-color: rgba(10, 132, 255, 0.3);">
+                <button id="btn-recalc-food" class="secondary mt-16 flex-center gap-8"
+                    onclick="if(typeof recalculateFoodAI === 'function') recalculateFoodAI()"
+                    style="border-color: rgba(10, 132, 255, 0.3); color: var(--client-blue);"><i
+                        data-lucide="refresh-cw"></i> Перерахувати</button>
+            </div>
+
+            <button onclick="if(typeof submitEditFood === 'function') submitEditFood()" class="mt-32"
+                data-i18n="btn_save">Зберегти зміни</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('edit-food-modal')"
+                data-i18n="btn_cancel">Скасувати</button>
+        </div>
+    </div>
+
+    <!-- NEW FUELCAST AI SCAN MODAL -->
+    <div id="fuelcast-scan-modal" class="modal-overlay" style="z-index: 1000; align-items: flex-end; padding: 0;">
+        <div class="modal-content"
+            style="border-radius: 32px 32px 0 0; background: var(--card-bg); width: 100%; max-width: 500px; padding: 30px; margin: 0; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div
+                style="width: 40px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 auto 24px;">
+            </div>
+
+            <h3 class="mt-0 mb-16"
+                style="font-size: 24px; font-weight: 800; display: flex; justify-content: space-between; align-items: center;">
+                Detected Items
+                <button
+                    onclick="closeModal('fuelcast-scan-modal'); document.getElementById('fuelcast-scan-modal').querySelector('.modal-content').style.transform = 'translateY(100%)';"
+                    style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;"><i
+                        data-lucide="x" style="width: 16px; color: #fff;"></i></button>
+            </h3>
+
+            <div id="fuelcast-scan-items"
+                style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; max-height: 40vh; overflow-y: auto; padding-right: 5px;">
+                <!-- Items will be injected here via JS -->
+            </div>
+
+            <h4 class="mt-0 mb-12" style="font-size: 16px; font-weight: 700; color: #fff;">Total Meal</h4>
+            <div class="fuel-card mb-24" style="padding: 20px; text-align: center;">
+                <div
+                    style="font-size: 32px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; line-height: 1; margin-bottom: 6px;">
+                    <span id="fc-total-cal">0</span>
+                </div>
+                <div
+                    style="font-size: 13px; color: var(--hint-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px;">
+                    Calories</div>
+
+                <!-- Stacked Progress Bar -->
+                <div
+                    style="display: flex; height: 8px; border-radius: 10px; overflow: hidden; margin-bottom: 12px; background: rgba(255,255,255,0.05);">
+                    <div id="fc-bar-c" style="height: 100%; background: #ff2d55; width: 0%; transition: width 1s ease;">
+                    </div>
+                    <div id="fc-bar-p" style="height: 100%; background: #bf5af2; width: 0%; transition: width 1s ease;">
+                    </div>
+                    <div id="fc-bar-f" style="height: 100%; background: #32d74b; width: 0%; transition: width 1s ease;">
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 6px; color: #ff2d55;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#ff2d55;"></div><span
+                            id="fc-val-c">0g Carbs</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; color: #bf5af2;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#bf5af2;"></div><span
+                            id="fc-val-p">0g Protein</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; color: #32d74b;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#32d74b;"></div><span
+                            id="fc-val-f">0g Fat</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-log-fuelcast-meal"
+                style="width: 100%; background: #ff6b00; color: #fff; border: none; border-radius: 100px; padding: 18px; font-size: 16px; font-weight: 700; box-shadow: 0 8px 20px rgba(255, 107, 0, 0.4);"><i data-lucide="check-circle"></i> Записати</button>
+        </div>
+    </div>
+
+    <div id="edit-exercise-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="edit-ex-title" class="mt-0 pb-16"
+                style="border-bottom: 1px solid var(--border-color); font-size: 22px;">Редагувати вправу</h3>
+            <input type="hidden" id="edit-ex-day">
+            <input type="hidden" id="edit-ex-index">
+            <label class="mt-16" data-i18n="label_ex_name">Назва вправи</label>
+            <input type="text" id="edit-ex-name">
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full"><label class="mt-0" data-i18n="label_sets">Підходи</label><input type="text"
+                        id="edit-ex-sets"></div>
+                <div class="w-full"><label class="mt-0" data-i18n="label_reps_time">Повторення</label><input type="text"
+                        id="edit-ex-reps"></div>
+            </div>
+            <div class="flex-between gap-16 mt-32">
+                <button onclick="if(typeof submitEditExercise === 'function') submitEditExercise()" class="mt-0"
+                    style="flex: 3;" data-i18n="btn_save">Зберегти</button>
+                <button id="btn-delete-ex" class="secondary delete mt-0 flex-center"
+                    onclick="if(typeof deleteExercise === 'function') deleteExercise()"
+                    style="flex: 1; height: auto; border: 1px solid rgba(255,45,85,0.3);"><i
+                        data-lucide="trash-2"></i></button>
+            </div>
+            <button class="secondary delete mt-8 w-full" style="border: none;"
+                onclick="closeModal('edit-exercise-modal')" data-i18n="btn_cancel">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="exercise-info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="info-modal-title" class="mt-0 pb-16"
+                style="color: var(--text-color); font-size: 24px; border-bottom: 1px solid var(--border-color);">Вправа
+            </h3>
+            <div class="mb-24 mt-24">
+                <span class="text-muted"
+                    style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="target_muscles">Цільові м'язи:</span>
+                <div id="info-modal-muscles" class="mt-4"
+                    style="font-size: 16px; color: var(--theme-color); font-weight: bold;">...</div>
+            </div>
+            <div class="mb-32 pt-24 pb-24"
+                style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 16px; border: 1px solid var(--border-color);">
+                <span class="text-muted"
+                    style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"
+                    data-i18n="instruction">Інструкція:</span>
+                <div id="info-modal-instruction" class="mt-8"
+                    style="font-size: 15px; color: var(--text-color); line-height: 1.6; white-space: pre-wrap;">...
+                </div>
+            </div>
+            <a id="btn-youtube-link" href="#" target="_blank" class="flex-center mb-16"
+                style="display: none; background: transparent; color: #ff0000; border: 1px solid rgba(255,0,0,0.3); padding: 16px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 15px; text-transform: uppercase;">Дивитися
+                техніку (YouTube)</a>
+            <button class="secondary delete mt-0 w-full" style="border: none;"
+                onclick="closeModal('exercise-info-modal')" data-i18n="btn_close">Закрити</button>
+        </div>
+    </div>
+
+    <div id="quick-comp-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;"
+                data-i18n="title_comp_settings">Налаштування</h3>
+            <label class="mt-16" data-i18n="comp_sport_label">Вид спорту</label>
+            <input type="text" id="quick-comp-sport" placeholder="Напр: Пауерліфтинг">
+            <label class="mt-16" data-i18n="comp_date_label">Дата змагань</label>
+            <input type="date" id="quick-comp-date">
+
+            <button id="btn-save-quick-comp" onclick="saveQuickComp()" class="mt-32"
+                data-i18n="btn_save">Зберегти</button>
+            <button onclick="clearCompetition()" class="secondary mt-16"
+                style="border-color: rgba(255, 45, 85, 0.3); color: var(--danger);"
+                data-i18n="btn_cancel_comp">Скасувати підготовку</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('quick-comp-modal')"
+                data-i18n="btn_close">Закрити</button>
+        </div>
+    </div>
+
+    <div id="create-duel-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-center gap-8"
+                style="border-bottom: 1px solid var(--border-color); font-size: 22px; justify-content: flex-start;"><i
+                    data-lucide="swords"></i> Кинути виклик</h3>
+            <p class="text-muted mb-24" style="font-size: 14px;">Оберіть тип змагання і зробіть ставку. Переможець
+                забирає все!</p>
+
+            <label class="mt-0">Тип дуелі</label>
+            <select id="duel-type">
+                <option value="workouts">Більше виконаних тренувань</option>
+                <option value="calories">Хто спалить більше калорій</option>
+                <option value="streak">Хто довше протримає Стрік</option>
+            </select>
+
+            <label class="mt-16">Супротивник</label>
+            <select id="duel-opponent" onchange="updateDuelButtonText()">
+                <option value="0">Будь-хто (Згенерувати посилання)</option>
+            </select>
+
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full">
+                    <label class="mt-0">Ставка (EXP)</label>
+                    <input type="number" id="duel-bet" value="100" step="50" min="50">
+                </div>
+                <div class="w-full">
+                    <label class="mt-0">Тривалість (днів)</label>
+                    <input type="number" id="duel-days" value="3" min="1" max="30">
+                </div>
+            </div>
+
+            <button onclick="if(typeof submitDuel === 'function') submitDuel()" class="mt-32"
+                style="background: #ff2d55; color: #fff;">Згенерувати посилання-виклик</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;"
+                onclick="closeModal('create-duel-modal')">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="workout-summary-modal" class="modal-overlay">
+        <div class="modal-content" style="background: var(--bg-color); max-height: 95vh; padding: 20px;">
+            <h2 class="text-center mt-0 mb-24" style="color: var(--theme-color);">Тренування Завершено!</h2>
+
+            <div id="shareable-card" class="mb-24 relative"
+                style="background: #0f0f0f; border: 2px solid var(--theme-color); border-radius: 24px; padding: 30px 20px; overflow: hidden;">
+                <div
+                    style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--theme-color); filter: blur(80px); opacity: 0.3; border-radius: 50%;">
+                </div>
+                <div
+                    style="position: absolute; bottom: -50px; left: -50px; width: 150px; height: 150px; background: var(--accent-gold); filter: blur(80px); opacity: 0.2; border-radius: 50%;">
+                </div>
+
+                <div class="text-center relative" style="z-index: 2;">
+                    <h3 class="mb-4"
+                        style="font-size: 28px; font-weight: 900; font-family: 'Space Grotesk', sans-serif;">FITNESS HUB
+                    </h3>
+                    <p class="text-muted mb-32"
+                        style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">Тренування виконано
+                    </p>
+
+                    <div class="bento-grid gap-16 mb-32">
+                        <div class="bento-col-span-1 pt-16 pb-16"
+                            style="background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 28px; font-weight: 900; color: var(--theme-color); font-family: 'Space Grotesk', sans-serif;"
+                                id="sum-volume">0</div>
+                            <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase;">Тоннаж (кг)
+                            </div>
+                        </div>
+                        <div class="bento-col-span-1 pt-16 pb-16"
+                            style="background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 28px; font-weight: 900; color: #ff9500; font-family: 'Space Grotesk', sans-serif;"
+                                id="sum-calories">0</div>
+                            <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase;">Ккал
+                                спалено</div>
+                        </div>
+                        <div class="bento-col-span-1 pt-16 pb-16"
+                            style="background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 24px; font-weight: 900; color: var(--text-color); font-family: 'Space Grotesk', sans-serif;"
+                                id="sum-time">0</div>
+                            <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase;">Підходів
+                            </div>
+                        </div>
+                        <div class="bento-col-span-1 pt-16 pb-16"
+                            style="background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 24px; font-weight: 900; color: var(--accent-gold); font-family: 'Space Grotesk', sans-serif;"
+                                id="sum-streak">0</div>
+                            <div class="text-muted mt-4" style="font-size: 11px; text-transform: uppercase;">Стрік</div>
+                        </div>
+                    </div>
+
+                    <div class="flex-between"
+                        style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 16px; border: 1px dashed var(--border-color);">
+                        <div class="text-left">
+                            <div style="font-size: 12px; color: var(--text-color); font-weight: bold;">Приєднуйся до
+                                команди!</div>
+                            <div class="text-muted mt-4" style="font-size: 10px;">Скануй QR, щоб почати</div>
+                        </div>
+                        <div id="share-qr-code" style="background: #fff; padding: 4px; border-radius: 8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <img id="result-image-preview" class="mb-24 w-full"
+                style="display: none; border-radius: 24px; box-shadow: 0 0 30px rgba(0, 234, 102, 0.2); -webkit-touch-callout: default;" />
+
+            <button id="btn-share-instagram" onclick="if(typeof shareSummaryImage === 'function') shareSummaryImage()"
+                class="mt-8 flex-center gap-8"
+                style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: #fff; font-size: 16px; border: none; box-shadow: 0 4px 15px rgba(220, 39, 67, 0.4);"><i
+                    data-lucide="camera"></i> Поділитися результатом</button>
+            <button class="secondary delete mt-16 w-full" style="border: none;"
+                onclick="closeModal('workout-summary-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <div id="full-calendar-modal" class="modal-overlay">
+        <div class="modal-content pb-32">
+            <h3 class="mt-0 pb-16 mb-24 flex-center gap-8"
+                style="color: var(--text-color); border-bottom: 1px solid var(--border-color); justify-content: flex-start;">
+                <i data-lucide="calendar-days"></i> Твій календар циклу
+            </h3>
+
+            <div class="calendar-header mb-24">
+                <button class="calendar-nav-btn"
+                    onclick="if(typeof changeCalendarMonth === 'function') changeCalendarMonth(-1)"><i
+                        data-lucide="chevron-left"></i></button>
+                <div id="calendar-month-year" style="font-size: 16px; font-weight: bold; text-transform: capitalize;">
+                    Місяць Рік</div>
+                <button class="calendar-nav-btn"
+                    onclick="if(typeof changeCalendarMonth === 'function') changeCalendarMonth(1)"><i
+                        data-lucide="chevron-right"></i></button>
+            </div>
+
+            <div class="calendar-grid" id="calendar-days-header">
+                <div class="calendar-day-header">Пн</div>
+                <div class="calendar-day-header">Вв</div>
+                <div class="calendar-day-header">Ср</div>
+                <div class="calendar-day-header">Чт</div>
+                <div class="calendar-day-header">Пт</div>
+                <div class="calendar-day-header">Сб</div>
+                <div class="calendar-day-header">Нд</div>
+            </div>
+            <div class="calendar-grid mb-24" id="calendar-grid-content"></div>
+
+            <div class="flex-center gap-16 text-muted mb-24" style="flex-wrap: wrap; font-size: 11px;">
+                <div class="flex-center gap-8">
+                    <div class="cal-dot red"></div> Менструація
+                </div>
+                <div class="flex-center gap-8">
+                    <div class="cal-dot blue"></div> Овуляція
+                </div>
+                <div class="flex-center gap-8">
+                    <div class="cal-dot yellow"></div> Симптоми
+                </div>
+            </div>
+
+            <button class="secondary delete mt-0 w-full" style="border: none;"
+                onclick="closeModal('full-calendar-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <div id="barbell-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-center gap-8"
+                style="border-bottom: 1px solid var(--border-color); font-size: 22px; justify-content: flex-start;"><i
+                    data-lucide="calculator"></i> Калькулятор штанги</h3>
+            <div class="flex-between gap-16 mt-16">
+                <div class="w-full">
+                    <label class="mt-0">Вага грифа (кг)</label>
+                    <select id="barbell-weight-select"
+                        onchange="if(typeof calculateBarbell === 'function') calculateBarbell()">
+                        <option value="20">20 кг (Олімпійський)</option>
+                        <option value="15">15 кг (Жіночий)</option>
+                        <option value="10">10 кг (Короткий)</option>
+                    </select>
+                </div>
+                <div class="w-full">
+                    <label class="mt-0">Цільова вага (кг)</label>
+                    <input type="number" id="barbell-target-weight" placeholder="Напр. 100"
+                        oninput="if(typeof calculateBarbell === 'function') calculateBarbell()">
+                </div>
+            </div>
+
+            <div class="barbell-container mt-32 mb-32" id="barbell-visual-container">
+                <div class="barbell-bar"></div>
+                <div class="barbell-sleeve" style="left: calc(50% - 15px);"></div>
+                <div class="plates-container" id="barbell-plates-left"
+                    style="padding-right: 15px; flex-direction: row-reverse;"></div>
+                <div class="plates-container" id="barbell-plates-right" style="padding-left: 15px;"></div>
+            </div>
+            <div id="barbell-text-result" class="text-center text-muted" style="font-size: 14px;">Введіть цільову вагу
+            </div>
+
+            <button class="secondary delete mt-32 w-full" style="border: none;"
+                onclick="closeModal('barbell-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <div id="substitute-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-center gap-8"
+                style="border-bottom: 1px solid var(--border-color); font-size: 22px; justify-content: flex-start;"><i
+                    data-lucide="shuffle"></i> Альтернативи</h3>
+            <p class="text-muted mt-16 mb-24" style="font-size: 14px;">Оберіть вправу на заміну, якщо поточна вам не
+                підходить або тренажер зайнятий.</p>
+
+            <div id="substitute-loading" class="text-center text-muted py-24">
+                <i data-lucide="loader" class="spinner-icon"></i> ШІ підбирає найкращі заміни...
+            </div>
+
+            <div id="substitute-options" class="flex-column gap-16" style="display: none;">
+                <div class="bento-card"
+                    style="padding: 16px; border: 1px solid var(--theme-color); background: rgba(0, 234, 102, 0.05); cursor: pointer;"
+                    onclick="if(typeof applyExerciseSubstitute === 'function') applyExerciseSubstitute(0)">
+                    <h4 class="mt-0 mb-4" style="color: var(--text-color); font-size: 16px;" id="sub-opt-1-name">
+                        Альтернатива 1</h4>
+                    <p class="text-muted mb-0" style="font-size: 13px;" id="sub-opt-1-reason">Опис</p>
+                </div>
+                <div class="bento-card"
+                    style="padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer;"
+                    onclick="if(typeof applyExerciseSubstitute === 'function') applyExerciseSubstitute(1)">
+                    <h4 class="mt-0 mb-4" style="color: var(--text-color); font-size: 16px;" id="sub-opt-2-name">
+                        Альтернатива 2</h4>
+                    <p class="text-muted mb-0" style="font-size: 13px;" id="sub-opt-2-reason">Опис</p>
+                </div>
+                <div class="bento-card"
+                    style="padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer;"
+                    onclick="if(typeof applyExerciseSubstitute === 'function') applyExerciseSubstitute(2)">
+                    <h4 class="mt-0 mb-4" style="color: var(--text-color); font-size: 16px;" id="sub-opt-3-name">
+                        Альтернатива 3</h4>
+                    <p class="text-muted mb-0" style="font-size: 13px;" id="sub-opt-3-reason">Опис</p>
+                </div>
+            </div>
+            <button class="secondary delete mt-24 w-full" style="border: none;"
+                onclick="closeModal('substitute-modal')">Скасувати</button>
+        </div>
+    </div>
+
+    <div id="workout-summary-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; padding: 0;">
+            <!-- This snapshot area will be captured by html2canvas -->
+            <div id="summary-snapshot-area"
+                style="background: radial-gradient(circle at top, #1c1c1e, #000); border-radius: 24px; padding: 30px 20px; color: #fff; text-align: center; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden;">
+                <!-- Glowing inner blobs for aesthetics -->
+                <div
+                    style="position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background: rgba(255,45,85,0.4); filter: blur(60px); opacity: 0.6; z-index: 0;">
+                </div>
+                <div
+                    style="position: absolute; bottom: -50px; right: -50px; width: 150px; height: 150px; background: rgba(191,90,242,0.4); filter: blur(60px); opacity: 0.6; z-index: 0;">
+                </div>
+
+                <h2
+                    style="font-size: 22px; font-weight: 900; margin-bottom: 2px; position: relative; z-index: 1; letter-spacing: 1px;">
+                    FITNESS HUB</h2>
+                <p
+                    style="font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 0; margin-bottom: 5px; position: relative; z-index: 1; text-transform: uppercase; letter-spacing: 1px;">
+                    Тренування Виконано</p>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 0; margin-bottom: 25px; position: relative; z-index: 1;"
+                    id="ws-date-subtitle">Fitness Hub Pro</p>
+
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; position: relative; z-index: 1; margin-bottom: 10px;">
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="dumbbell"
+                            style="color: #ff2d55; width: 24px; height: 24px; margin-bottom: 8px;"></i>
+                        <div style="font-size: 24px; font-weight: 800; line-height: 1.2;" id="ws-val-ex">0</div>
+                        <div
+                            style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--hint-color);">
+                            Вправ</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="copy"
+                            style="color: #bf5af2; width: 24px; height: 24px; margin-bottom: 8px;"></i>
+                        <div style="font-size: 24px; font-weight: 800; line-height: 1.2;" id="ws-val-sets">0</div>
+                        <div
+                            style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--hint-color);">
+                            Підходів</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="weight"
+                            style="color: #00ea66; width: 24px; height: 24px; margin-bottom: 8px;"></i>
+                        <div style="font-size: 24px; font-weight: 800; line-height: 1.2;" id="ws-val-vol">0</div>
+                        <div
+                            style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--hint-color);">
+                            Тоннаж (кг)</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="flame"
+                            style="color: #ff9500; width: 24px; height: 24px; margin-bottom: 8px;"></i>
+                        <div style="font-size: 24px; font-weight: 800; line-height: 1.2;" id="ws-val-cal">0</div>
+                        <div
+                            style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--hint-color);">
+                            Спалено (ккал)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px;" class="flex-column gap-12">
+                <button id="btn-share-summary" onclick="if(typeof shareSummaryImage === 'function') shareSummaryImage()"
+                    style="background: var(--client-blue); color: #fff; width: 100%; border-radius: 16px; padding: 18px; font-size: 16px; font-weight: 700; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 24px rgba(10, 132, 255, 0.4);"><i
+                        data-lucide="send"></i> Отримати фото в чат</button>
+                <button class="secondary"
+                    style="width: 100%; border: none; color: #fff; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 18px;"
+                    onclick="closeModal('workout-summary-modal');">Закрити</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEEKLY RECAP MODAL (Replaces Stories) -->
+    <div id="weekly-recap-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; padding: 0;">
+            
+            <div id="weekly-recap-snapshot-area" style="position: relative; overflow: hidden; border-radius: 24px; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                <div class="stories-progress-container" id="recap-progress-bars" style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10;"></div>
+                <div id="recap-content-area" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"></div>
+                
+                <!-- Manual Navigation Overlays -->
+                <div onclick="if(typeof recapPrevSlide === 'function') recapPrevSlide()" style="position: absolute; top: 0; left: 0; width: 40%; height: 100%; z-index: 5;"></div>
+                <div onclick="if(typeof recapNextSlide === 'function') recapNextSlide()" style="position: absolute; top: 0; right: 0; width: 40%; height: 100%; z-index: 5;"></div>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; justify-content: center; gap: 15px;">
+                <button onclick="if(typeof recapPrevSlide === 'function') recapPrevSlide()" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <button onclick="if(typeof recapNextSlide === 'function') recapNextSlide()" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+
+            <div style="margin-top: 24px;" class="flex-column gap-12">
+                <button id="btn-share-recap" onclick="if(typeof shareRecapSlide === 'function') shareRecapSlide()"
+                    style="background: linear-gradient(135deg, #0a84ff, #bf5af2); color: #fff; width: 100%; border-radius: 16px; padding: 18px; font-size: 16px; font-weight: 700; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 24px rgba(10, 132, 255, 0.4);"><i
+                        data-lucide="send"></i> Отримати фото в чат</button>
+                <button class="secondary"
+                    style="width: 100%; border: none; color: #fff; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 18px;"
+                    onclick="closeModal('weekly-recap-modal');">Закрити</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paywall Modal -->
+    <div id="paywall-modal" class="modal-overlay" onclick="if(event.target===this) PaywallModal.close();">
+        <div class="modal-content" style="max-width: 400px; margin: 0 auto; padding-top: 40px; border-radius: 30px 30px 0 0;">
+            <div style="font-size: 54px; margin-bottom: 16px;">🌟</div>
+            <h2 id="paywall-feature-title" style="margin-bottom: 12px; color: #d4af37; font-size: 24px;">Функція доступна в підписці PRO</h2>
+            <p style="color: var(--hint-color); font-size: 15px; margin-bottom: 30px;">Перейдіть на преміум, щоб розблокувати цей функціонал та безліч інших неймовірних можливостей застосунку!</p>
+            <button id="paywall-buy-btn" style="width: 100%; border-radius: 20px; font-weight: 700; padding: 18px; font-size: 16px;"><i data-lucide="zap"></i> Відкрити PRO (Тест)</button>
+            <button class="secondary" style="width: 100%; border: none; color: #fff; background: rgba(255,255,255,0.1); border-radius: 20px; margin-top: 12px; padding: 18px; font-size: 15px;" onclick="PaywallModal.close();">Можливо пізніше</button>
+        </div>
+    </div>
+
+    <!-- Subscription Management Modal -->
+    <div id="subscription-management-modal" class="modal-overlay" onclick="if(event.target===this) SubscriptionManager.closeModal();">
+        <div class="modal-content" style="max-width: 500px; margin: 0 auto; height: 90vh; overflow-y: auto; padding: 24px 16px; border-radius: 20px 20px 0 0; background: var(--bg-color);">
+            <div class="flex-between mb-24">
+                <h2 style="margin: 0; font-size: 22px;">Тарифи Фітнес-Хабу</h2>
+                <button class="icon-btn" onclick="SubscriptionManager.closeModal();"><i data-lucide="x"></i></button>
+            </div>
+            <p style="color: var(--hint-color); font-size: 14px; margin-bottom: 24px;">Оберіть план, який підходить саме вам.</p>
+            
+            <div id="subscription-plans-container" class="flex-column gap-16 pb-100">
+                <!-- Карточки генеруватимуться через JS -->
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="bottom-nav" style="display:none;">
+        <div class="nav-item" id="nav-item-profile" onclick="navTo('profile-view', this)">
+            <i data-lucide="user"></i>
+            <span class="nav-label" data-i18n="nav_profile" style="font-size: 10px; margin-bottom: 0;">Профіль</span>
+        </div>
+        <div class="nav-item active" id="nav-item-dashboard" onclick="navTo('dashboard-view', this)">
+            <i data-lucide="calendar-days"></i>
+            <span class="nav-label" data-i18n="nav_plan" style="font-size: 10px; margin-bottom: 0;">План</span>
+        </div>
+        <div class="nav-item" id="nav-cycle-btn" style="display: none;" onclick="navTo('cycle-view', this)">
+            <i data-lucide="flower-2"></i>
+            <span class="nav-label" data-i18n="nav_cycle" style="font-size: 10px; margin-bottom: 0;">Цикл</span>
+        </div>
+        <div class="nav-item" id="nav-item-nutrition" onclick="navTo('nutrition-view', this)">
+            <i data-lucide="apple"></i>
+            <span class="nav-label" data-i18n="nav_food" style="font-size: 10px; margin-bottom: 0;">Їжа</span>
+        </div>
+        <div class="nav-item" id="nav-item-progress" onclick="navTo('progress-view', this)">
+            <i data-lucide="activity"></i>
+            <span class="nav-label" data-i18n="nav_data" style="font-size: 10px; margin-bottom: 0;">Дані</span>
+        </div>
+        <div class="nav-item" id="nav-item-coach" onclick="navTo('coach-view', this)">
+            <i data-lucide="message-circle"></i>
+            <span class="nav-label" data-i18n="nav_chat" style="font-size: 10px; margin-bottom: 0;">Чат</span>
+        </div>
+        <div class="nav-item" id="nav-item-gamification" onclick="navTo('gamification-view', this)">
+            <i data-lucide="trophy"></i>
+            <span class="nav-label" data-i18n="nav_ranks" style="font-size: 10px; margin-bottom: 0;">Ранги</span>
+        </div>
+    </nav>
+
+    <script>
+        function contactCoach(isVideo = false) {
+            if (!window.userData || !window.userData.user || !window.userData.user.trainer_username) {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+                    window.Telegram.WebApp.showAlert("Тренер ще не підключив свій Telegram");
+                } else {
+                    alert("Тренер ще не підключив свій Telegram");
+                }
+                return;
+            }
+            
+            let targetUsername = window.userData.user.trainer_username.replace('@', '');
+            const url = 'https://t.me/' + targetUsername;
+            
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        function inviteFriend() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                const botUsername = "coach_app_bot";
+                const shareText = "Приєднуйся до мене у Fitness Hub! Давай тренуватися та змагатися разом:";
+                const shareUrl = `https://t.me/share/url?url=https://t.me/${botUsername}?start=friend_${window.userId}&text=${encodeURIComponent(shareText)}`;
+                window.Telegram.WebApp.openTelegramLink(shareUrl);
+            } else {
+                alert("Скопіюйте це посилання та надішліть другу: https://t.me/coach_app_bot?start=friend_" + window.userId);
+            }
+        }
+    </script>
+
+    <div id="logWeightModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">Ввести вагу</h3>
+            <p class="text-muted mb-24" style="font-size: 14px;">Ваша нова вага буде збережена в історію та використана для розрахунків ШІ.</p>
+            
+            <label class="mt-0">Вага (кг)</label>
+            <input type="number" id="new-weight-input" step="0.1" placeholder="Напр: 72.5">
+            
+            <button onclick="saveNewWeight()" class="mt-32" style="background: var(--theme-color); color: #fff;">Зберегти вагу</button>
+            <button class="secondary delete mt-8 w-full" style="border: none;" onclick="closeModal('logWeightModal')">Скасувати</button>
+        </div>
+    </div>
+
+    <!-- Weight Chart Modal -->
+    <div id="weight-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-between" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">
+                Динаміка ваги <i data-lucide="activity" style="color: var(--client-blue);"></i>
+            </h3>
+            
+            <div class="mb-24 relative" style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid var(--border-color); height: 250px; width: 100%;">
+                <canvas id="weightChartModal"></canvas>
+            </div>
+            
+            <button class="mt-16 mb-8 w-full" style="background: var(--client-blue); color: #fff;" onclick="closeModal('weight-modal'); setTimeout(() => openLogWeightModal(), 300);">Записати нову вагу</button>
+            <button class="secondary delete w-full" style="border: none;" onclick="closeModal('weight-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <!-- AI Advice Modal -->
+    <div id="cycle-advice-modal" class="modal-overlay" style="z-index: 1000;">
+        <div class="modal-content" style="padding-bottom: 24px;">
+            <div class="flex-between mb-16">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    ШІ-Порада дня <i data-lucide="sparkles" style="color: var(--theme-color);"></i>
+                </h3>
+                <i data-lucide="x" class="close-icon" onclick="closeModal('cycle-advice-modal')"></i>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                <p id="cycle-advice-text" style="color: var(--text-color); font-size: 14px; line-height: 1.5; margin: 0;"></p>
+            </div>
+            <button class="w-full" style="background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color);" onclick="closeModal('cycle-advice-modal')">Зрозуміло</button>
+        </div>
+    </div>
+
+    <!-- Metrics Chart Modal -->
+    <div id="metrics-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="mt-0 pb-16 flex-between" style="border-bottom: 1px solid var(--border-color); font-size: 22px;">
+                Графік замірів <i data-lucide="ruler" style="color: var(--theme-color);"></i>
+            </h3>
+            
+            <div class="mb-24 relative" style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 16px; border: 1px solid var(--border-color); height: 300px; width: 100%;">
+                <canvas id="metricsChart"></canvas>
+            </div>
+            
+            <button class="mt-16 mb-8 w-full" style="background: var(--client-blue); color: #fff;" onclick="closeModal('metrics-modal'); setTimeout(() => document.getElementById('btn-save-metrics').scrollIntoView({behavior:'smooth', block:'center'}), 300);">Додати нові заміри</button>
+            <button class="secondary delete w-full" style="border: none;" onclick="closeModal('metrics-modal')">Закрити</button>
+        </div>
+    </div>
+
+    <script src="/static/js/anatomy/bodyFront.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyBack.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyFemaleFront.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/bodyFemaleBack.js?v=3.2.0" defer></script>
+    <script src="/static/js/anatomy/anatomy_mapper.js?v=3.2.0" defer></script>
+
+    <script src="/static/js/animations.js?v=3.2.0" defer></script>
+
+    <script src="/static/js/subscriptions.js?v=3.2.0" defer></script>
+    <script src="/static/js/onboarding.js?v=3.2.0" defer></script>
+    <script src="/static/js/client.js?v=3.2.0" defer></script>
+    <script src="/static/js/client_tracking.js?v=3.2.0" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // V2.0 Video Upload Handler
+            const videoInput = document.getElementById('set-video');
+            if (videoInput) {
+                videoInput.addEventListener('change', function (e) {
+                    const label = document.getElementById('set-video-label');
+                    if (this.files && this.files.length > 0) {
+                        label.innerHTML = '<i data-lucide="check-circle-2" style="color: var(--success);"></i> Відео додано (' + this.files[0].name + ')';
+                        label.style.borderColor = 'var(--success)';
+                        label.style.color = 'var(--success)';
+                    } else {
+                        label.innerHTML = '<i data-lucide="video"></i> Прикріпити відео техніки';
+                        label.style.borderColor = '';
+                        label.style.color = '';
+                    }
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
